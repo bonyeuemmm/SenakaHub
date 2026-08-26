@@ -4,6 +4,7 @@ local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local CoreGui = game:GetService("CoreGui")
 local Lighting = game:GetService("Lighting")
+local TeleportService = game:GetService("TeleportService")
 local LocalPlayer = Players.LocalPlayer
 
 pcall(function()
@@ -57,6 +58,7 @@ _G.Config = {
     AutoV4 = false,
     AutoAvoidSeaEvent = true,
     AutoBuyBoat = true,
+    AutoSitBoat = true,
     SelectedBoat = "Sleigh",
     AutoGetSanguineArt = false,
     AutoTravel = "",
@@ -64,7 +66,7 @@ _G.Config = {
 }
 
 _G.SenakaLocations = {
-    TikiBoat = CFrame.new(-16234, 9, 416),
+    TikiBoat = CFrame.new(-16234, 15, 416),
     Hydra = CFrame.new(5749, 610, -282),
     SpyNpc = CFrame.new(-16110, 15, 450),
     DemonicFumeNpc = CFrame.new(5263, 2, -10410)
@@ -96,33 +98,28 @@ _G.SenakaCharacterMove = function(targetCFrame, speed)
     hum.PlatformStand = false
 end
 
-local function HasPlayerBoat()
+local function GetPlayerBoat()
     for _, obj in pairs(workspace:GetChildren()) do
-        if obj:IsA("Model") and (obj.Name:find(LocalPlayer.Name) or obj:FindFirstChild("Owner") and tostring(obj.Owner.Value) == LocalPlayer.Name) then
-            return true
+        if obj:IsA("Model") then
+            if obj.Name:find(LocalPlayer.Name) or (obj:FindFirstChild("Owner") and tostring(obj.Owner.Value) == LocalPlayer.Name) then
+                return obj
+            end
         end
     end
-    return false
+    return nil
 end
 
 local function SmartBuyBoat()
     local boatName = _G.Config.SelectedBoat or "Sleigh"
     pcall(function()
-        Fluent:Notify({ Title = "Senaka Hub", Content = "Đang tiến hành mua thuyền: " .. boatName, Duration = 2 })
+        ReplicatedStorage.Remotes.CommF_:InvokeServer("BuyBoat", boatName)
     end)
-    local success, res = pcall(function()
-        return ReplicatedStorage.Remotes.CommF_:InvokeServer("BuyBoat", boatName)
-    end)
-    if success then
-        task.wait(1)
-        return true
-    end
-    return false
+    task.wait(1.5)
 end
 
 local WaterPlatform = Instance.new("Part")
 WaterPlatform.Name = "SenakaWaterPlatform"
-WaterPlatform.Size = Vector3.new(100, 1, 100)
+WaterPlatform.Size = Vector3.new(120, 1, 120)
 WaterPlatform.Anchored = true
 WaterPlatform.Transparency = 1
 WaterPlatform.CanCollide = false
@@ -134,8 +131,8 @@ RunService.Stepped:Connect(function()
             local char = LocalPlayer.Character
             local root = char and char:FindFirstChild("HumanoidRootPart")
             if root then
-                if root.Position.Y <= 20 and root.Position.Y >= -100 then
-                    WaterPlatform.CFrame = CFrame.new(root.Position.X, 1, root.Position.Z)
+                if root.Position.Y <= 25 and root.Position.Y >= -100 then
+                    WaterPlatform.CFrame = CFrame.new(root.Position.X, 3, root.Position.Z)
                     WaterPlatform.CanCollide = true
                 else
                     WaterPlatform.CanCollide = false
@@ -147,6 +144,7 @@ RunService.Stepped:Connect(function()
     end
 end)
 
+-- Vòng lặp tính năng phụ trợ (Buso, V3, V4, Né Event)
 task.spawn(function()
     while task.wait(1.2) do
         if _G.Config.AutoV3 then
@@ -158,13 +156,6 @@ task.spawn(function()
                     ReplicatedStorage.Remotes.CommE:FireServer("ActivateAbility")
                 end
             end)
-            pcall(function()
-                if game:GetService("VirtualInputManager") then
-                    game:GetService("VirtualInputManager"):SendKeyEvent(true, Enum.KeyCode.T, false, game)
-                    task.wait(0.05)
-                    game:GetService("VirtualInputManager"):SendKeyEvent(false, Enum.KeyCode.T, false, game)
-                end
-            end)
         end
     end
 end)
@@ -173,30 +164,7 @@ task.spawn(function()
     while task.wait(0.8) do
         if _G.Config.AutoV4 then
             pcall(function()
-                local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
-                local mainGui = playerGui and playerGui:FindFirstChild("Main")
-                local transformBar = mainGui and mainGui:FindFirstChild("TransformBar") or (playerGui and playerGui:FindFirstChild("TransformBar"))
-                
-                local canTransform = true
-                if transformBar then
-                    local fillBar = transformBar:FindFirstChild("Bar") or transformBar:FindFirstChild("Fill")
-                    if fillBar and fillBar.Size.X.Scale < 0.95 then
-                        canTransform = false
-                    end
-                end
-
-                if canTransform then
-                    pcall(function()
-                        ReplicatedStorage.Remotes.CommF_:InvokeServer("ActivateRaceTransformation")
-                    end)
-                    pcall(function()
-                        if game:GetService("VirtualInputManager") then
-                            game:GetService("VirtualInputManager"):SendKeyEvent(true, Enum.KeyCode.Y, false, game)
-                            task.wait(0.05)
-                            game:GetService("VirtualInputManager"):SendKeyEvent(false, Enum.KeyCode.Y, false, game)
-                        end
-                    end)
-                end
+                ReplicatedStorage.Remotes.CommF_:InvokeServer("ActivateRaceTransformation")
             end)
         end
     end
@@ -301,13 +269,29 @@ task.spawn(function()
                             end)
                         end
                     else
-                        if not HasPlayerBoat() then
+                        local myBoat = GetPlayerBoat()
+                        if not myBoat then
                             if (Root.Position - _G.SenakaLocations.TikiBoat.Position).Magnitude > 30 then
                                 _G.SenakaCharacterMove(_G.SenakaLocations.TikiBoat, _G.Config.TweenSpeed)
                             else
                                 if _G.Config.AutoBuyBoat then 
                                     SmartBuyBoat() 
-                                    task.wait(2)
+                                end
+                            end
+                        else
+                            -- Cơ chế tự động ngồi vào thuyền đã mua
+                            if _G.Config.AutoSitBoat and not Hum.SeatPart then
+                                local targetSeat = nil
+                                for _, d in pairs(myBoat:GetDescendants()) do
+                                    if (d:IsA("VehicleSeat") or d:IsA("Seat")) and not d.Occupant then
+                                        targetSeat = d
+                                        break
+                                    end
+                                end
+                                if targetSeat then
+                                    Root.CFrame = targetSeat.CFrame + Vector3.new(0, 3, 0)
+                                    task.wait(0.2)
+                                    targetSeat:Sit(Hum)
                                 end
                             end
                         end
@@ -350,7 +334,6 @@ task.spawn(function()
                 end
             end
         end
-
     end
 end)
 local success, Fluent = pcall(function()
@@ -496,7 +479,7 @@ _G.SenakaTabs.Automation:AddToggle("AutoAvoidSeaEventToggle", {
 })
 
 _G.SenakaTabs.Automation:AddToggle("AutoGetSanguineArtToggle", {
-    Title = "Tự Động Farm Nguyên Liệu Lấy Sanguine Art",
+    Title = "Tự Động Farm Lấy Võ Sanguine Art",
     Default = _G.Config.AutoGetSanguineArt,
     Callback = function(Value)
         _G.Config.AutoGetSanguineArt = Value
@@ -521,38 +504,46 @@ _G.SenakaTabs.Automation:AddToggle("AutoBuyBoatToggle", {
     end
 })
 
+_G.SenakaTabs.Automation:AddToggle("AutoSitBoatToggle", {
+    Title = "Tự Động Ngồi Vào Thuyền Đã Mua",
+    Default = _G.Config.AutoSitBoat,
+    Callback = function(Value)
+        _G.Config.AutoSitBoat = Value
+    end
+})
+
 _G.SenakaTabs.Travel:AddButton({
     Title = "Teleport sang Sea 1",
-    Description = "Dịch chuyển đến First Sea",
+    Description = "Dịch chuyển đến First Sea (Blox Fruits)",
     Callback = function()
         pcall(function()
-            game:GetService("TeleportService"):Teleport(2753915549, LocalPlayer)
+            TeleportService:Teleport(2753915549, LocalPlayer)
         end)
     end
 })
 
 _G.SenakaTabs.Travel:AddButton({
     Title = "Teleport sang Sea 2",
-    Description = "Dịch chuyển đến Second Sea",
+    Description = "Dịch chuyển đến Second Sea (Blox Fruits)",
     Callback = function()
         pcall(function()
-            game:GetService("TeleportService"):Teleport(4442272183, LocalPlayer)
+            TeleportService:Teleport(4442272183, LocalPlayer)
         end)
     end
 })
 
 _G.SenakaTabs.Travel:AddButton({
     Title = "Teleport sang Sea 3",
-    Description = "Dịch chuyển đến Third Sea",
+    Description = "Dịch chuyển đến Third Sea (Blox Fruits)",
     Callback = function()
         pcall(function()
-            game:GetService("TeleportService"):Teleport(7449423635, LocalPlayer)
+            TeleportService:Teleport(7449423635, LocalPlayer)
         end)
     end
 })
 
 _G.SenakaTabs.Travel:AddDropdown("TravelDropdown", {
-    Title = "Chọn Đảo Để Di Chuyển",
+    Title = "Chọn Đảo Để Di Chuyển Nhanh",
     Values = {"Tiki Outpost", "Hydra Island"},
     Multi = false,
     Default = 1,
