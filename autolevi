@@ -4,7 +4,6 @@ local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local CoreGui = game:GetService("CoreGui")
 local Lighting = game:GetService("Lighting")
-local TeleportService = game:GetService("TeleportService")
 local LocalPlayer = Players.LocalPlayer
 
 pcall(function()
@@ -70,81 +69,7 @@ _G.SenakaLocations = {
     SpyNpc = CFrame.new(-16110, 20, 450),
     DemonicFumeNpc = CFrame.new(5263, 2, -10410)
 }
-
-local targetParent = (syn and syn.protect_gui) and syn.protect_gui(CoreGui) or (gethui and gethui()) or CoreGui
-if targetParent:FindFirstChild("SenakaNotifyGui") then
-    targetParent.SenakaNotifyGui:Destroy()
-end
-
-local NotifyGui = Instance.new("ScreenGui")
-NotifyGui.Name = "SenakaNotifyGui"
-NotifyGui.ResetOnSpawn = false
-NotifyGui.Parent = targetParent
-
-local ContainerFrame = Instance.new("Frame")
-ContainerFrame.Size = UDim2.new(0, 300, 1, 0)
-ContainerFrame.Position = UDim2.new(1, -315, 0, -15)
-ContainerFrame.BackgroundTransparency = 1
-ContainerFrame.Parent = NotifyGui
-
-local Holder2 = Instance.new("UIListLayout")
-Holder2.SortOrder = Enum.SortOrder.LayoutIndex
-Holder2.VerticalAlignment = Enum.VerticalAlignment.Bottom
-Holder2.HorizontalAlignment = Enum.HorizontalAlignment.Right
-Holder2.Padding = UDim.new(0, 8)
-Holder2.Parent = ContainerFrame
-
-local function ShowNotify(title, desc, duration)
-    pcall(function()
-        duration = duration or 3
-        local f = Instance.new("Frame")
-        f.Size = UDim2.new(0, 280, 0, 55)
-        f.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-        f.BorderSizePixel = 0
-        f.Parent = ContainerFrame
-
-        local corner = Instance.new("UICorner")
-        corner.CornerRadius = UDim.new(0, 8)
-        corner.Parent = f
-
-        local stroke = Instance.new("UIStroke")
-        stroke.Color = Color3.fromRGB(255, 204, 0)
-        stroke.Thickness = 1.5
-        stroke.Parent = f
-
-        local tLabel = Instance.new("TextLabel")
-        tLabel.Size = UDim2.new(1, -15, 0, 22)
-        tLabel.Position = UDim2.new(0, 10, 0, 5)
-        tLabel.BackgroundTransparency = 1
-        tLabel.Font = Enum.Font.SourceSansBold
-        tLabel.Text = title or "SENAKA HUB"
-        tLabel.TextColor3 = Color3.fromRGB(255, 204, 0)
-        tLabel.TextSize = 14
-        tLabel.TextXAlignment = Enum.TextXAlignment.Left
-        tLabel.Parent = f
-
-        local dLabel = Instance.new("TextLabel")
-        dLabel.Size = UDim2.new(1, -15, 0, 22)
-        dLabel.Position = UDim2.new(0, 10, 0, 25)
-        dLabel.BackgroundTransparency = 1
-        dLabel.Font = Enum.Font.SourceSans
-        dLabel.Text = desc or ""
-        dLabel.TextColor3 = Color3.fromRGB(220, 220, 220)
-        dLabel.TextSize = 12
-        dLabel.TextXAlignment = Enum.TextXAlignment.Left
-        dLabel.Parent = f
-
-        task.spawn(function()
-            task.wait(duration)
-            pcall(function()
-                local tw = TweenService:Create(f, TweenInfo.new(0.3), {BackgroundTransparency = 1})
-                tw:Play()
-                tw.Completed:Wait()
-                f:Destroy()
-            end)
-        end)
-    end)
-en_G.SenakaCharacterMove = function(targetCFrame, speed)
+_G.SenakaCharacterMove = function(targetCFrame, speed)
     local char = LocalPlayer.Character
     if not char then return end
     local root = char:FindFirstChild("HumanoidRootPart")
@@ -479,50 +404,66 @@ _G.SenakaTabs = {
 }
 
 pcall(function()
-    local targetParent = (syn and syn.protect_gui) and syn.protect_gui(CoreGui) or (gethui and gethui()) or CoreGui
-    if targetParent:FindFirstChild("SenakaToggleIcon") then
-        targetParent.SenakaToggleIcon:Destroy()
+    local coreGui = game:GetService("CoreGui")
+    if coreGui:FindFirstChild("SenakaToggleIcon") then
+        coreGui.SenakaToggleIcon:Destroy()
     end
+end)
 
-    local sg = Instance.new("ScreenGui")
-    sg.Name = "SenakaToggleIcon"
-    sg.ResetOnSpawn = false
-    sg.Parent = targetParent
-    
-    local btn = Instance.new("TextButton")
-    btn.Name = "ToggleButton"
-    btn.Size = UDim2.new(0, 45, 0, 45)
-    btn.Position = UDim2.new(0, 15, 0.35, 0)
-    btn.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-    btn.Text = "MENU"
-    btn.TextColor3 = Color3.fromRGB(255, 204, 0)
-    btn.TextSize = 11
-    btn.Font = Enum.Font.SourceSansBold
-    btn.Active = true
-    btn.Draggable = true
-    btn.Parent = sg
-    
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 10)
-    corner.Parent = btn
-    
-    local stroke = Instance.new("UIStroke")
-    stroke.Color = Color3.fromRGB(255, 204, 0)
-    stroke.Thickness = 2
-    stroke.Parent = btn
+local TweenService = game:GetService("TweenService")
+local targetParent = (syn and syn.protect_gui) and syn.protect_gui(CoreGui) or (gethui and gethui()) or CoreGui
 
-    local isOpen = true
-    btn.MouseButton1Click:Connect(function()
-        isOpen = not isOpen
-        pcall(function()
-            if isOpen then
-                _G.SenakaWindow:Unpack()
-            else
-                _G.SenakaWindow:Minimize()
+local sg = Instance.new("ScreenGui")
+sg.Name = "SenakaToggleIcon"
+sg.ResetOnSpawn = false
+sg.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+sg.Parent = targetParent
+
+local btn = Instance.new("ImageButton")
+btn.Name = "ToggleButton"
+btn.Size = UDim2.new(0, 50, 0, 50)
+btn.Position = UDim2.new(0, 20, 0.4, 0)
+btn.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+btn.BorderSizePixel = 0
+btn.Active = true
+btn.Draggable = true
+btn.Parent = sg
+
+btn.Image = "rbxassetid://89042380317763"
+
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0, 12)
+corner.Parent = btn
+
+local stroke = Instance.new("UIStroke")
+stroke.Color = Color3.fromRGB(255, 170, 0)
+stroke.Thickness = 2
+stroke.Parent = btn
+
+local windowVisible = true
+
+btn.MouseButton1Click:Connect(function()
+    windowVisible = not windowVisible
+    
+    pcall(function()
+        if _G.SenakaWindow then
+            if type(_G.SenakaWindow.Minimize) == "function" then
+                if windowVisible then
+                    _G.SenakaWindow:Unpack()
+                else
+                    _G.SenakaWindow:Minimize()
+                end
+            elseif _G.SenakaWindow.Enabled ~= nil then
+                _G.SenakaWindow.Enabled = windowVisible
             end
-        end)
-        btn.Text = isOpen and "HIDE" or "SHOW"
+        elseif _G.Fluent and _G.Fluent.Window then
+            _G.Fluent.Window:Minimize()
+        end
     end)
+    
+    TweenService:Create(btn, TweenInfo.new(0.1), {Size = UDim2.new(0, 42, 0, 42)}):Play()
+    task.wait(0.1)
+    TweenService:Create(btn, TweenInfo.new(0.1), {Size = UDim2.new(0, 50, 0, 50)}):Play()
 end)
 
 _G.SenakaTabs.Automation:AddInput("MasterNameInput", {
@@ -532,7 +473,6 @@ _G.SenakaTabs.Automation:AddInput("MasterNameInput", {
     Finished = false,
     Callback = function(Value)
         _G.Config.MasterName = Value
-        ShowNotify("System", "Master Name: " .. Value, 2)
     end
 })
 
@@ -542,7 +482,6 @@ _G.SenakaTabs.Automation:AddToggle("MasterToggle", {
     Callback = function(Value)
         _G.Config.IsMaster = Value
         if Value then _G.Config.IsSlave = false end
-        ShowNotify("System", "Master: " .. tostring(Value), 2)
     end
 })
 
@@ -552,7 +491,6 @@ _G.SenakaTabs.Automation:AddToggle("SlaveToggle", {
     Callback = function(Value)
         _G.Config.IsSlave = Value
         if Value then _G.Config.IsMaster = false end
-        ShowNotify("System", "Slave: " .. tostring(Value), 2)
     end
 })
 
@@ -561,7 +499,6 @@ _G.SenakaTabs.Automation:AddToggle("WaterWalkToggle", {
     Default = _G.Config.WaterWalk,
     Callback = function(Value)
         _G.Config.WaterWalk = Value
-        ShowNotify("System", "Water Walk: " .. tostring(Value), 2)
     end
 })
 
@@ -570,7 +507,6 @@ _G.SenakaTabs.Automation:AddToggle("AutoBusoToggle", {
     Default = _G.Config.AutoBuso,
     Callback = function(Value)
         _G.Config.AutoBuso = Value
-        ShowNotify("System", "Auto Buso: " .. tostring(Value), 2)
     end
 })
 
@@ -579,7 +515,6 @@ _G.SenakaTabs.Automation:AddToggle("AutoV3Toggle", {
     Default = _G.Config.AutoV3,
     Callback = function(Value)
         _G.Config.AutoV3 = Value
-        ShowNotify("System", "Auto V3: " .. tostring(Value), 2)
     end
 })
 
@@ -588,25 +523,22 @@ _G.SenakaTabs.Automation:AddToggle("AutoV4Toggle", {
     Default = _G.Config.AutoV4,
     Callback = function(Value)
         _G.Config.AutoV4 = Value
-        ShowNotify("System", "Auto V4: " .. tostring(Value), 2)
     end
 })
 
-_G.SenakaTabs.Automation:AddToggle("AutoAvoidSeaEventToggle", {
+_G.SenakaTabs.Automation:AddToggle("AvoidSeaEventToggle", {
     Title = "Avoid Sea Event",
     Default = _G.Config.AutoAvoidSeaEvent,
     Callback = function(Value)
         _G.Config.AutoAvoidSeaEvent = Value
-        ShowNotify("System", "Avoid Sea Event: " .. tostring(Value), 2)
     end
 })
 
-_G.SenakaTabs.Automation:AddToggle("AutoGetSanguineArtToggle", {
+_G.SenakaTabs.Automation:AddToggle("AutoSanguineArtToggle", {
     Title = "Auto Sanguine Art",
     Default = _G.Config.AutoGetSanguineArt,
     Callback = function(Value)
         _G.Config.AutoGetSanguineArt = Value
-        ShowNotify("System", "Auto Sanguine Art: " .. tostring(Value), 2)
     end
 })
 
@@ -617,7 +549,6 @@ _G.SenakaTabs.Automation:AddDropdown("BoatDropdown", {
     Default = 1,
     Callback = function(Value)
         _G.Config.SelectedBoat = Value
-        ShowNotify("System", "Boat: " .. Value, 2)
     end
 })
 
@@ -626,7 +557,6 @@ _G.SenakaTabs.Automation:AddToggle("AutoBuyBoatToggle", {
     Default = _G.Config.AutoBuyBoat,
     Callback = function(Value)
         _G.Config.AutoBuyBoat = Value
-        ShowNotify("System", "Auto Buy Boat: " .. tostring(Value), 2)
     end
 })
 
@@ -641,8 +571,5 @@ _G.SenakaTabs.Travel:AddDropdown("TravelDropdown", {
         elseif Value == "Hydra Island" then
             _G.Config.AutoTravel = "HydraIsland"
         end
-        ShowNotify("System", "Traveling to: " .. tostring(Value), 2)
     end
 })
-
-ShowNotify("SENAKA HUB", "Loaded successfully!", 3)
