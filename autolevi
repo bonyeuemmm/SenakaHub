@@ -49,7 +49,7 @@ _G.Config = {
     IsMaster = false, 
     IsSlave = false, 
     MasterName = "bonbicuttay_999",
-    BypassTeleport = true, -- Đã tối ưu mượt mà, chống khựng & chống anti-cheat
+    BypassTeleport = true, 
     WaterWalk = true,
     AutoBuso = true,
     AutoV3V4 = true,
@@ -59,14 +59,16 @@ _G.Config = {
     TweenSpeed = 350,
 }
 
-local TikiBoatCFrame = CFrame.new(-16234, 9, 416)
-local HydraCFrame = CFrame.new(5749, 610, -282)
-local LeviathanGateCFrame = CFrame.new(-16110, 15, 450)
+_G.SenakaLocations = {
+    TikiBoat = CFrame.new(-16234, 9, 416),
+    Hydra = CFrame.new(5749, 610, -282),
+    LeviathanGate = CFrame.new(-16110, 15, 450)
+}
 
 local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
 
-local Window = Fluent:CreateWindow({
-    Title = "SENAKA HUB | KAITUN LEVIATHAN",
+_G.SenakaWindow = Fluent:CreateWindow({
+    Title = "SENAKA HUB | KAITUN LEVIATHAN (PART 1)",
     SubTitle = "By Pain & Gemini AI",
     TabWidth = 160,
     Size = UDim2.fromOffset(580, 460),
@@ -75,9 +77,9 @@ local Window = Fluent:CreateWindow({
     MinimizeKey = Enum.KeyCode.LeftControl
 })
 
-local Tabs = {
-    Automation = Window:AddTab({ Title = "Automation", Icon = "home" }),
-    Travel = Window:AddTab({ Title = "Travel", Icon = "map" })
+_G.SenakaTabs = {
+    Automation = _G.SenakaWindow:AddTab({ Title = "Automation", Icon = "home" }),
+    Travel = _G.SenakaWindow:AddTab({ Title = "Travel", Icon = "map" })
 }
 
 local function CreateToggleIcon()
@@ -131,14 +133,14 @@ local function CreateToggleIcon()
         end)
         
         btn.MouseButton1Click:Connect(function()
-            Window:Minimize()
+            _G.SenakaWindow:Minimize()
         end)
     end)
 end
 
 CreateToggleIcon()
 
-local function SendYellowNotification(title, message, duration)
+_G.SenakaSendYellowNotice = function(title, message, duration)
     pcall(function()
         local sg = Instance.new("ScreenGui")
         sg.Name = "SenakaYellowNotice"
@@ -184,14 +186,14 @@ local function SendYellowNotification(title, message, duration)
     end)
 end
 
-local function SendNotification(title, content, duration)
+_G.SenakaSendNotification = function(title, content, duration)
     pcall(function()
         Fluent:Notify({ Title = title, Content = content, Duration = duration or 3 })
     end)
 end
 
--- TỐI ƯU HÓA BYPASS TELEPORT MƯỢT MÀ VÀ AN TOÀN
-local function CharacterMove(targetCFrame, speed)
+-- HÀM DI CHUYỂN BẰNG BYPASS TELEPORT (TỰ ĐỘNG NGẮT NGAY KHI TẮT TOGGLE)
+_G.SenakaCharacterMove = function(targetCFrame, speed)
     local char = LocalPlayer.Character
     if not char then return end
     local root = char:FindFirstChild("HumanoidRootPart")
@@ -200,33 +202,41 @@ local function CharacterMove(targetCFrame, speed)
 
     speed = speed or _G.Config.TweenSpeed
 
+    if not _G.Config.IsMaster and not _G.Config.IsSlave and _G.Config.AutoTravel == "" then
+        hum.PlatformStand = false
+        return
+    end
+
     if _G.Config.BypassTeleport then
         local distance = (root.Position - targetCFrame.Position).Magnitude
         if distance < 3 then return end
         
         hum.PlatformStand = true
         
-        -- Kích hoạt Noclip toàn diện để không bị kẹt địa hình
         local noclipConn
         noclipConn = RunService.Stepped:Connect(function()
             if char and char.Parent then
                 for _, part in pairs(char:GetChildren()) do
-                    if part:IsA("BasePart") then 
-                        part.CanCollide = false 
-                    end
+                    if part:IsA("BasePart") then part.CanCollide = false end
                 end
             else
                 if noclipConn then noclipConn:Disconnect() end
             end
         end)
 
-        -- Sử dụng thuật toán lerp/tween tốc độ cao kết hợp triệt tiêu vận tốc vật lý gây văng
         local duration = math.clamp(distance / speed, 0.05, 0.8)
         local startTime = tick()
         local startCFrame = root.CFrame
 
         local connection
         connection = RunService.RenderStepped:Connect(function()
+            if (not _G.Config.IsMaster and not _G.Config.IsSlave and _G.Config.AutoTravel == "") or not _G.Config.BypassTeleport then
+                if connection then connection:Disconnect() end
+                if noclipConn then noclipConn:Disconnect() end
+                hum.PlatformStand = false
+                return
+            end
+
             local elapsed = tick() - startTime
             local alpha = math.clamp(elapsed / duration, 0, 1)
             
@@ -253,7 +263,6 @@ local function CharacterMove(targetCFrame, speed)
         return
     end
 
-    -- Chế độ di chuyển thường nếu tắt Bypass
     hum.PlatformStand = true
     local noclipConn = RunService.Stepped:Connect(function()
         if char and char.Parent then
@@ -276,6 +285,12 @@ local function CharacterMove(targetCFrame, speed)
     return tween
 end
 
+_G.SenakaSendYellowNotice("PART 1 LOADED!", "Core và Bypass Teleport đã sẵn sàng!", 4)
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Players = game:GetService("Players")
+local VirtualInputManager = game:GetService("VirtualInputManager")
+local LocalPlayer = Players.LocalPlayer
+
 local function SmartBuyBoat()
     local boatList = {"Sleigh", "Mirage", "FlowerBoat", "Speedboat", "Dinghy"}
     for _, boat in ipairs(boatList) do
@@ -283,13 +298,14 @@ local function SmartBuyBoat()
             return ReplicatedStorage.Remotes.CommF_:InvokeServer("BuyBoat", boat)
         end)
         if success and res and res ~= "Failed" then
-            SendNotification("Mua Thuyền", "Thành công: " .. boat)
+            _G.SenakaSendNotification("Mua Thuyền", "Thành công: " .. boat)
             return true
         end
     end
     return false
 end
 
+-- VÒNG LẶP CHÍNH XỬ LÝ TÍNH NĂNG
 spawn(function()
     while true do
         task.wait(0.4)
@@ -298,23 +314,29 @@ spawn(function()
         local Hum = Char and Char:FindFirstChild("Humanoid")
         local Root = Char and Char:FindFirstChild("HumanoidRootPart")
 
+        -- 1. ĐỨNG TRÊN NƯỚC (WATER WALK)
         if _G.Config.WaterWalk and Root then
             pcall(function()
-                if Root.Position.Y < 5 and Root.Position.Y > -50 then
-                    if not Root:FindFirstChild("WaterPlatform") then
+                if Root.Position.Y < 4 and Root.Position.Y > -100 then
+                    local existingPlatform = workspace:FindFirstChild("WaterPlatform_" .. LocalPlayer.Name)
+                    if not existingPlatform then
                         local p = Instance.new("Part")
-                        p.Name = "WaterPlatform"
-                        p.Size = Vector3.new(12, 1, 12)
+                        p.Name = "WaterPlatform_" .. LocalPlayer.Name
+                        p.Size = Vector3.new(14, 1, 14)
                         p.Anchored = true
                         p.Transparency = 1
-                        p.CFrame = CFrame.new(Root.Position.X, 2, Root.Position.Z)
+                        p.CanCollide = true
+                        p.CFrame = CFrame.new(Root.Position.X, 1.5, Root.Position.Z)
                         p.Parent = workspace
-                        task.delay(0.5, function() if p then p:Destroy() end end)
+                        task.delay(0.6, function() if p then p:Destroy() end end)
+                    else
+                        existingPlatform.CFrame = CFrame.new(Root.Position.X, 1.5, Root.Position.Z)
                     end
                 end
             end)
         end
 
+        -- 2. BẬT HAKI VŨ TRANG (BUSO)
         if _G.Config.AutoBuso and Char then
             pcall(function()
                 if not Char:FindFirstChild("HasBuso") then
@@ -323,6 +345,7 @@ spawn(function()
             end)
         end
 
+        -- 3. KÍCH HOẠT TỘC V3 / V4 (BẤM PHÍM Y VÀ T)
         if _G.Config.AutoV3V4 then
             pcall(function()
                 VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Y, false, game)
@@ -332,7 +355,7 @@ spawn(function()
             end)
         end
 
-        -- Kiểm tra Sea Event: Đưa lên cao thông minh để né tránh nếu bật
+        -- 4. NÉ TRÁNH SEA EVENT
         local isAvoidingEvent = false
         if _G.Config.AutoAvoidSeaEvent and Root then
             pcall(function()
@@ -351,15 +374,17 @@ spawn(function()
             end)
         end
 
+        -- 5. XỬ LÝ TRAVEL NHANH
         if _G.Config.AutoTravel ~= "" then
             local destName = _G.Config.AutoTravel
             pcall(function()
                 ReplicatedStorage.Remotes.CommF_:InvokeServer("Travel", destName)
             end)
-            SendNotification("Di chuyển", "Đang tới: " .. destName)
+            _G.SenakaSendNotification("Di chuyển", "Đang tới: " .. destName)
             _G.Config.AutoTravel = ""
         end
 
+        -- 6. LOGIC CHỦ THUYỀN (MASTER) VÀ PHỤ (SLAVE)
         if not isAvoidingEvent then
             if _G.Config.IsMaster and Root and Hum and Hum.Health > 0 then
                 local IceIsland = workspace:FindFirstChild("LeviathanIceIsland")
@@ -369,8 +394,8 @@ spawn(function()
                     local MyBoat = workspace:FindFirstChild(LocalPlayer.Name .. "_Boat")
                     
                     if not MyBoat then
-                        if (Root.Position - TikiBoatCFrame.Position).Magnitude > 50 then
-                            CharacterMove(TikiBoatCFrame, _G.Config.TweenSpeed)
+                        if (Root.Position - _G.SenakaLocations.TikiBoat.Position).Magnitude > 50 then
+                            _G.SenakaCharacterMove(_G.SenakaLocations.TikiBoat, _G.Config.TweenSpeed)
                             task.wait(0.3)
                         end
                         if _G.Config.AutoBuyBoat then SmartBuyBoat() end
@@ -383,12 +408,12 @@ spawn(function()
                     if Heart then
                         pcall(function()
                             ReplicatedStorage.Remotes.CommF_:InvokeServer("PullHeart")
-                            SendNotification("Leviathan", "Đang tiến hành kéo tim về đích...")
+                            _G.SenakaSendNotification("Leviathan", "Đang tiến hành kéo tim về đích...")
                         end)
                     end
                 else
-                    if (Root.Position - TikiBoatCFrame.Position).Magnitude > 100 then
-                        CharacterMove(TikiBoatCFrame, _G.Config.TweenSpeed)
+                    if (Root.Position - _G.SenakaLocations.TikiBoat.Position).Magnitude > 100 then
+                        _G.SenakaCharacterMove(_G.SenakaLocations.TikiBoat, _G.Config.TweenSpeed)
                     end
                 end
             end
@@ -427,7 +452,7 @@ spawn(function()
                                     TargetSeat:Sit(Hum)
                                 end)
                             elseif (Root.Position - MasterRoot.Position).Magnitude > 15 then
-                                CharacterMove(MasterRoot.CFrame * CFrame.new(0, 3, -3), _G.Config.TweenSpeed)
+                                _G.SenakaCharacterMove(MasterRoot.CFrame * CFrame.new(0, 3, -3), _G.Config.TweenSpeed)
                             end
                         end
                     end
@@ -438,8 +463,8 @@ spawn(function()
     end
 end)
 
--- TAB AUTOMATION
-Tabs.Automation:AddInput("MasterNameInput", {
+-- GIAO DIỆN TAB AUTOMATION
+_G.SenakaTabs.Automation:AddInput("MasterNameInput", {
     Title = "Tên Tài Khoản Chính (Master)",
     Default = _G.Config.MasterName,
     Placeholder = "Nhập chính xác tên acc chính",
@@ -450,7 +475,7 @@ Tabs.Automation:AddInput("MasterNameInput", {
     end
 })
 
-Tabs.Automation:AddToggle("MasterToggle", {
+_G.SenakaTabs.Automation:AddToggle("MasterToggle", {
     Title = "Chủ Thuyền (Master)",
     Default = _G.Config.IsMaster,
     Callback = function(Value)
@@ -459,7 +484,7 @@ Tabs.Automation:AddToggle("MasterToggle", {
     end
 })
 
-Tabs.Automation:AddToggle("SlaveToggle", {
+_G.SenakaTabs.Automation:AddToggle("SlaveToggle", {
     Title = "Phụ (Slave)",
     Default = _G.Config.IsSlave,
     Callback = function(Value)
@@ -468,7 +493,7 @@ Tabs.Automation:AddToggle("SlaveToggle", {
     end
 })
 
-Tabs.Automation:AddToggle("BypassTeleportToggle", {
+_G.SenakaTabs.Automation:AddToggle("BypassTeleportToggle", {
     Title = "Bypass Teleport (Tối ưu mượt mà, chống khựng)",
     Default = _G.Config.BypassTeleport,
     Callback = function(Value)
@@ -476,7 +501,7 @@ Tabs.Automation:AddToggle("BypassTeleportToggle", {
     end
 })
 
-Tabs.Automation:AddToggle("WaterWalkToggle", {
+_G.SenakaTabs.Automation:AddToggle("WaterWalkToggle", {
     Title = "Đứng Trên Nước (Water Walk)",
     Default = _G.Config.WaterWalk,
     Callback = function(Value)
@@ -484,7 +509,7 @@ Tabs.Automation:AddToggle("WaterWalkToggle", {
     end
 })
 
-Tabs.Automation:AddToggle("AutoBusoToggle", {
+_G.SenakaTabs.Automation:AddToggle("AutoBusoToggle", {
     Title = "Tự Động Bật Haki Vũ Trang (Buso)",
     Default = _G.Config.AutoBuso,
     Callback = function(Value)
@@ -492,15 +517,15 @@ Tabs.Automation:AddToggle("AutoBusoToggle", {
     end
 })
 
-Tabs.Automation:AddToggle("AutoV3V4Toggle", {
-    Title = "Tự Động Kích Hoạt Tộc V3 / V4",
+_G.SenakaTabs.Automation:AddToggle("AutoV3V4Toggle", {
+    Title = "Tự Động Bật Tộc V3 / V4",
     Default = _G.Config.AutoV3V4,
     Callback = function(Value)
         _G.Config.AutoV3V4 = Value
     end
 })
 
-Tabs.Automation:AddToggle("AutoAvoidSeaEventToggle", {
+_G.SenakaTabs.Automation:AddToggle("AutoAvoidSeaEventToggle", {
     Title = "Tự Động Né Tránh Sea Event (Bay lên cao né thông minh)",
     Default = _G.Config.AutoAvoidSeaEvent,
     Callback = function(Value)
@@ -508,7 +533,7 @@ Tabs.Automation:AddToggle("AutoAvoidSeaEventToggle", {
     end
 })
 
-Tabs.Automation:AddToggle("AutoBuyBoatToggle", {
+_G.SenakaTabs.Automation:AddToggle("AutoBuyBoatToggle", {
     Title = "Tự Động Mua Thuyền Khi Đến Đảo",
     Default = _G.Config.AutoBuyBoat,
     Callback = function(Value)
@@ -516,26 +541,26 @@ Tabs.Automation:AddToggle("AutoBuyBoatToggle", {
     end
 })
 
--- TAB TRAVEL
-Tabs.Travel:AddButton({
+-- GIAO DIỆN TAB TRAVEL
+_G.SenakaTabs.Travel:AddButton({
     Title = "Về đảo Tiki (Tiki Outpost)",
     Callback = function()
         _G.Config.AutoTravel = "TikiOutpost"
     end
 })
 
-Tabs.Travel:AddButton({
+_G.SenakaTabs.Travel:AddButton({
     Title = "Về đảo Hydra (Hydra Island)",
     Callback = function()
         _G.Config.AutoTravel = "HydraIsland"
     end
 })
 
-Tabs.Travel:AddButton({
+_G.SenakaTabs.Travel:AddButton({
     Title = "Đến Cổng Leviathan (Leviathan Gate)",
     Callback = function()
-        CharacterMove(LeviathanGateCFrame, _G.Config.TweenSpeed)
+        _G.SenakaCharacterMove(_G.SenakaLocations.LeviathanGate, _G.Config.TweenSpeed)
     end
 })
 
-SendYellowNotification("SENAKA HUB LOADED!",6)
+_G.SenakaSendYellowNotice("SENAKA HUB FULLY LOADED!",)
