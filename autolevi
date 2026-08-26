@@ -56,7 +56,7 @@ _G.Config = {
     AutoV3 = false,
     AutoV4 = false,
     AutoAvoidSeaEvent = true,
-    SelectedBoat = "Sleigh",
+    SelectedBoat = "Sloop", 
     AutoGetSanguineArt = false,
     AutoTravel = "",
     TweenSpeed = 300,
@@ -65,7 +65,7 @@ _G.Config = {
 _G.SenakaLocations = {
     TikiBoat = CFrame.new(-16234, 25, 416),
     Hydra = CFrame.new(5749, 610, -282),
-    SpyNpc = CFrame.new(-16110, 20, 450),
+    SpyNpc = CLine and CFrame.new(-16110, 20, 450) or CFrame.new(-16110, 20, 450),
     DemonicFumeNpc = CFrame.new(5263, 2, -10410)
 }
 _G.SenakaCharacterMove = function(targetCFrame, speed)
@@ -108,39 +108,35 @@ local function GetPlayerBoat()
 end
 
 local function FindAndInteractBoatDealer()
-    local boatDealerNpc = nil
+    local dealerPart = nil
     if workspace:FindFirstChild("NPCs") then
         for _, npc in pairs(workspace.NPCs:GetChildren()) do
             if npc.Name:lower():find("boat") or npc.Name:lower():find("dealer") then
-                boatDealerNpc = npc
-                break
-            end
-        end
-    end
-
-    -- Quét toàn bộ workspace nếu không tìm thấy trong thư mục NPCs
-    if not boatDealerNpc then
-        for _, obj in pairs(workspace:GetChildren()) do
-            if obj:IsA("Model") and (obj.Name:lower():find("boat") or obj.Name:lower():find("dealer")) then
-                boatDealerNpc = obj
-                break
+                if npc:FindFirstChild("HumanoidRootPart") then
+                    dealerPart = npc.HumanoidRootPart
+                    break
+                end
             end
         end
     end
 
     local char = LocalPlayer.Character
     local root = char and char:FindFirstChild("HumanoidRootPart")
-    
-    if boatDealerNpc and boatDealerNpc:FindFirstChild("HumanoidRootPart") and root then
-        if (boatDealerNpc.HumanoidRootPart.Position - root.Position).Magnitude > 15 then
-            _G.SenakaCharacterMove(boatDealerNpc.HumanoidRootPart.CFrame * CFrame.new(0, 3, 3), _G.Config.TweenSpeed)
+
+    if dealerPart and root then
+        if (dealerPart.Position - root.Position).Magnitude > 10 then
+            _G.SenakaCharacterMove(dealerPart.CFrame * CFrame.new(0, 3, 3), _G.Config.TweenSpeed)
             task.wait(0.5)
         end
     end
-
-    local boatName = _G.Config.SelectedBoat or "Sleigh"
+      
+    local boatName = _G.Config.SelectedBoat or "Sloop"
     pcall(function()
         ReplicatedStorage.Remotes.CommF_:InvokeServer("BuyBoat", boatName)
+    end)
+    task.wait(0.5)
+    pcall(function()
+        ReplicatedStorage.Remotes.CommF_:InvokeServer("BuyBoat", "Sleigh")
     end)
     task.wait(1.5)
 end
@@ -618,7 +614,7 @@ _G.SenakaTabs.Automation:AddToggle("AutoSanguineArtToggle", {
 
 _G.SenakaTabs.Automation:AddDropdown("BoatDropdown", {
     Title = "Select Boat",
-    Values = {"Sleigh", "Mirage", "FlowerBoat", "Speedboat", "Dinghy"},
+    Values = {"Sloop", "Sleigh", "Mirage", "FlowerBoat", "Speedboat", "Dinghy"},
     Multi = false,
     Default = 1,
     Callback = function(Value)
