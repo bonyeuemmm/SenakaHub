@@ -58,7 +58,6 @@ _G.Config = {
     AutoV4 = false,
     AutoAvoidSeaEvent = true,
     AutoBuyBoat = true,
-    AutoSitBoat = true,
     SelectedBoat = "Sleigh",
     AutoGetSanguineArt = false,
     AutoTravel = "",
@@ -66,9 +65,9 @@ _G.Config = {
 }
 
 _G.SenakaLocations = {
-    TikiBoat = CFrame.new(-16234, 15, 416),
+    TikiBoat = CFrame.new(-16234, 22, 416),
     Hydra = CFrame.new(5749, 610, -282),
-    SpyNpc = CFrame.new(-16110, 15, 450),
+    SpyNpc = CFrame.new(-16110, 20, 450),
     DemonicFumeNpc = CFrame.new(5263, 2, -10410)
 }
 _G.SenakaCharacterMove = function(targetCFrame, speed)
@@ -114,12 +113,30 @@ local function SmartBuyBoat()
     pcall(function()
         ReplicatedStorage.Remotes.CommF_:InvokeServer("BuyBoat", boatName)
     end)
-    task.wait(1.5)
+    task.wait(2)
+end
+
+-- Cơ chế cố định vật lý thuyền để không bị chìm xuống nước hoặc trôi
+local anchoredBoats = {}
+local function FixBoatPhysics(boatModel)
+    if not boatModel or anchoredBoats[boatModel] then return end
+    anchoredBoats[boatModel] = true
+    
+    task.spawn(function()
+        task.wait(0.5)
+        pcall(function()
+            for _, part in pairs(boatModel:GetDescendants()) do
+                if part:IsA("BasePart") then
+                    part.Anchored = true
+                end
+            end
+        end)
+    end)
 end
 
 local WaterPlatform = Instance.new("Part")
 WaterPlatform.Name = "SenakaWaterPlatform"
-WaterPlatform.Size = Vector3.new(120, 1, 120)
+WaterPlatform.Size = Vector3.new(150, 2, 150)
 WaterPlatform.Anchored = true
 WaterPlatform.Transparency = 1
 WaterPlatform.CanCollide = false
@@ -131,7 +148,7 @@ RunService.Stepped:Connect(function()
             local char = LocalPlayer.Character
             local root = char and char:FindFirstChild("HumanoidRootPart")
             if root then
-                if root.Position.Y <= 25 and root.Position.Y >= -100 then
+                if root.Position.Y <= 30 and root.Position.Y >= -100 then
                     WaterPlatform.CFrame = CFrame.new(root.Position.X, 3, root.Position.Z)
                     WaterPlatform.CanCollide = true
                 else
@@ -144,7 +161,7 @@ RunService.Stepped:Connect(function()
     end
 end)
 
--- Vòng lặp tính năng phụ trợ (Buso, V3, V4, Né Event)
+-- Vòng lặp các tính năng tự động phụ trợ
 task.spawn(function()
     while task.wait(1.2) do
         if _G.Config.AutoV3 then
@@ -271,7 +288,7 @@ task.spawn(function()
                     else
                         local myBoat = GetPlayerBoat()
                         if not myBoat then
-                            if (Root.Position - _G.SenakaLocations.TikiBoat.Position).Magnitude > 30 then
+                            if (Root.Position - _G.SenakaLocations.TikiBoat.Position).Magnitude > 40 then
                                 _G.SenakaCharacterMove(_G.SenakaLocations.TikiBoat, _G.Config.TweenSpeed)
                             else
                                 if _G.Config.AutoBuyBoat then 
@@ -279,8 +296,8 @@ task.spawn(function()
                                 end
                             end
                         else
-                            -- Cơ chế tự động ngồi vào thuyền đã mua
-                            if _G.Config.AutoSitBoat and not Hum.SeatPart then
+                            FixBoatPhysics(myBoat)
+                            if not Hum.SeatPart then
                                 local targetSeat = nil
                                 for _, d in pairs(myBoat:GetDescendants()) do
                                     if (d:IsA("VehicleSeat") or d:IsA("Seat")) and not d.Occupant then
@@ -504,17 +521,9 @@ _G.SenakaTabs.Automation:AddToggle("AutoBuyBoatToggle", {
     end
 })
 
-_G.SenakaTabs.Automation:AddToggle("AutoSitBoatToggle", {
-    Title = "Tự Động Ngồi Vào Thuyền Đã Mua",
-    Default = _G.Config.AutoSitBoat,
-    Callback = function(Value)
-        _G.Config.AutoSitBoat = Value
-    end
-})
-
 _G.SenakaTabs.Travel:AddButton({
     Title = "Teleport sang Sea 1",
-    Description = "Dịch chuyển đến First Sea (Blox Fruits)",
+    Description = "Dịch chuyển đến First Sea",
     Callback = function()
         pcall(function()
             TeleportService:Teleport(2753915549, LocalPlayer)
@@ -524,7 +533,7 @@ _G.SenakaTabs.Travel:AddButton({
 
 _G.SenakaTabs.Travel:AddButton({
     Title = "Teleport sang Sea 2",
-    Description = "Dịch chuyển đến Second Sea (Blox Fruits)",
+    Description = "Dịch chuyển đến Second Sea",
     Callback = function()
         pcall(function()
             TeleportService:Teleport(4442272183, LocalPlayer)
@@ -534,7 +543,7 @@ _G.SenakaTabs.Travel:AddButton({
 
 _G.SenakaTabs.Travel:AddButton({
     Title = "Teleport sang Sea 3",
-    Description = "Dịch chuyển đến Third Sea (Blox Fruits)",
+    Description = "Dịch chuyển đến Third Sea",
     Callback = function()
         pcall(function()
             TeleportService:Teleport(7449423635, LocalPlayer)
