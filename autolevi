@@ -3,7 +3,6 @@ local TweenService = game:GetService("TweenService")
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local CoreGui = game:GetService("CoreGui")
-local VirtualInputManager = game:GetService("VirtualInputManager")
 local LocalPlayer = Players.LocalPlayer
 
 pcall(function()
@@ -59,11 +58,12 @@ end
 
 if not success or not Fluent then return end
 
+-- Đã chỉnh lại kích thước responsive tự thích ứng với điện thoại, tránh bị ép thành giao diện PC
 _G.SenakaWindow = Fluent:CreateWindow({
     Title = "SENAKA HUB",
     SubTitle = "By Pain & Gemini AI",
-    TabWidth = 160,
-    Size = UDim2.fromOffset(580, 460),
+    TabWidth = 140,
+    Size = UDim2.new(0, 480, 0, 320), -- Kích thước chuẩn gọn gàng cho Mobile
     Acrylic = false,
     Theme = "Dark",
     MinimizeKey = Enum.KeyCode.LeftControl
@@ -74,6 +74,7 @@ _G.SenakaTabs = {
     Travel = _G.SenakaWindow:AddTab({ Title = "Travel", Icon = "map" })
 }
 
+-- Tạo nút thu gọn/mở menu linh hoạt trên điện thoại
 pcall(function()
     local targetParent = gethui and gethui() or CoreGui
     if targetParent:FindFirstChild("SenakaToggleIcon") then
@@ -87,19 +88,19 @@ pcall(function()
     
     local btn = Instance.new("TextButton")
     btn.Name = "ToggleButton"
-    btn.Size = UDim2.new(0, 50, 0, 50)
-    btn.Position = UDim2.new(0, 15, 0.4, 0)
+    btn.Size = UDim2.new(0, 45, 0, 45)
+    btn.Position = UDim2.new(0, 15, 0.35, 0)
     btn.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
     btn.Text = "MENU"
     btn.TextColor3 = Color3.fromRGB(255, 204, 0)
-    btn.TextSize = 12
+    btn.TextSize = 11
     btn.Font = Enum.Font.SourceSansBold
     btn.Active = true
     btn.Draggable = true
     btn.Parent = sg
     
     local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 12)
+    corner.CornerRadius = UDim.new(0, 10)
     corner.Parent = btn
     
     local stroke = Instance.new("UIStroke")
@@ -188,7 +189,7 @@ RunService.Stepped:Connect(function()
     end
 end)
 
--- Đã loại bỏ hoàn toàn việc click ảo liên tục gây liệt cảm ứng. Thay vào đó dùng Remote chuẩn sạch sẽ.
+-- Tự động bật V3/V4 an toàn không kẹt phím di chuyển
 task.spawn(function()
     while task.wait(1.5) do
         if _G.Config.AutoV3V4 then
