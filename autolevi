@@ -144,8 +144,7 @@ local function ShowNotify(title, desc, duration)
             end)
         end)
     end)
-end
-_G.SenakaCharacterMove = function(targetCFrame, speed)
+en_G.SenakaCharacterMove = function(targetCFrame, speed)
     local char = LocalPlayer.Character
     if not char then return end
     local root = char:FindFirstChild("HumanoidRootPart")
@@ -628,42 +627,6 @@ _G.SenakaTabs.Automation:AddToggle("AutoBuyBoatToggle", {
     Callback = function(Value)
         _G.Config.AutoBuyBoat = Value
         ShowNotify("System", "Auto Buy Boat: " .. tostring(Value), 2)
-    end
-})
-
-_G.SenakaTabs.Travel:AddButton({
-    Title = "Teleport Sea 1",
-    Description = "",
-    Callback = function()
-        ShowNotify("System", "Teleporting to Sea 1...", 2)
-        task.wait(1)
-        pcall(function()
-            TeleportService:Teleport(2753915549, LocalPlayer)
-        end)
-    end
-})
-
-_G.SenakaTabs.Travel:AddButton({
-    Title = "Teleport Sea 2",
-    Description = "",
-    Callback = function()
-        ShowNotify("System", "Teleporting to Sea 2...", 2)
-        task.wait(1)
-        pcall(function()
-            TeleportService:Teleport(4442272183, LocalPlayer)
-        end)
-    end
-})
-
-_G.SenakaTabs.Travel:AddButton({
-    Title = "Teleport Sea 3",
-    Description = "",
-    Callback = function()
-        ShowNotify("System", "Teleporting to Sea 3...", 2)
-        task.wait(1)
-        pcall(function()
-            TeleportService:Teleport(7449423635, LocalPlayer)
-        end)
     end
 })
 
