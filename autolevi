@@ -44,6 +44,7 @@ _G.Config = {
 
 _G.SenakaLocations = {
     TikiBoat = CFrame.new(-16234, 9, 416),
+    TikiPortal = CFrame.new(-16180, 20, 425),
     Hydra = CFrame.new(5749, 610, -282),
     LeviathanGate = CFrame.new(-16110, 15, 450)
 }
@@ -128,15 +129,21 @@ _G.SenakaSendNotification = function(title, content, duration)
     end)
 end
 
-_G.SenakaCharacterMove = function(targetCFrame, speed)
+_G.BypassPortalTeleport = function(targetCFrame)
     local char = LocalPlayer.Character
     if not char then return end
     local root = char:FindFirstChild("HumanoidRootPart")
     local hum = char:FindFirstChild("Humanoid")
     if not root or not hum then return end
 
-    if (root.Position - targetCFrame.Position).Magnitude < 8 then return end
-    speed = speed or _G.Config.TweenSpeed
+    if (root.Position - targetCFrame.Position).Magnitude > 500 then
+        pcall(function()
+            ReplicatedStorage.Remotes.CommF_:InvokeServer("Travel", "TikiOutpost")
+        end)
+        task.wait(1)
+        root.CFrame = _G.SenakaLocations.TikiPortal
+        task.wait(0.2)
+    end
 
     local noclipConn = RunService.Stepped:Connect(function()
         if char and char.Parent then
@@ -146,32 +153,46 @@ _G.SenakaCharacterMove = function(targetCFrame, speed)
         end
     end)
 
-    if _G.Config.BypassTeleport then
-        local distance = (root.Position - targetCFrame.Position).Magnitude
-        local steps = math.floor(distance / 25)
-        
-        for i = 1, steps do
-            if not _G.Config.IsMaster and not _G.Config.IsSlave and _G.Config.AutoTravel == "" then break end
-            root.CFrame = root.CFrame:Lerp(targetCFrame, i / steps)
-            root.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-            task.wait(0.02)
-        end
-        
-        root.CFrame = targetCFrame
-        if noclipConn then noclipConn:Disconnect() end
-        hum.PlatformStand = false
-        return
-    end
-
     hum.PlatformStand = true
     local distance = (root.Position - targetCFrame.Position).Magnitude
-    local duration = distance / speed
+    local duration = distance / _G.Config.TweenSpeed
     local tween = TweenService:Create(root, TweenInfo.new(duration, Enum.EasingStyle.Linear), {CFrame = targetCFrame})
 
     tween:Play()
     tween.Completed:Wait()
     if noclipConn then noclipConn:Disconnect() end
     hum.PlatformStand = false
+end
+
+_G.SenakaCharacterMove = function(targetCFrame, speed)
+    if _G.Config.BypassTeleport then
+        _G.BypassPortalTeleport(targetCFrame)
+    else
+        local char = LocalPlayer.Character
+        if not char then return end
+        local root = char:FindFirstChild("HumanoidRootPart")
+        local hum = char:FindFirstChild("Humanoid")
+        if not root or not hum then return end
+
+        speed = speed or _G.Config.TweenSpeed
+        local noclipConn = RunService.Stepped:Connect(function()
+            if char and char.Parent then
+                for _, part in pairs(char:GetChildren()) do
+                    if part:IsA("BasePart") then part.CanCollide = false end
+                end
+            end
+        end)
+
+        hum.PlatformStand = true
+        local distance = (root.Position - targetCFrame.Position).Magnitude
+        local duration = distance / speed
+        local tween = TweenService:Create(root, TweenInfo.new(duration, Enum.EasingStyle.Linear), {CFrame = targetCFrame})
+
+        tween:Play()
+        tween.Completed:Wait()
+        if noclipConn then noclipConn:Disconnect() end
+        hum.PlatformStand = false
+    end
 end
 
 local function SmartBuyBoat()
@@ -216,26 +237,10 @@ RunService.Stepped:Connect(function()
 end)
 
 task.spawn(function()
-    while task.wait(1.5) do
+    while task.wait(0.5) do
         if _G.Config.AutoV3V4 then
             pcall(function()
-                local char = LocalPlayer.Character
-                if char then
-                    local v3Ability = char:FindFirstChild("Awakening") or char:FindFirstChild("Energy")
-                    if v3Ability and v3Ability:IsA("RemoteEvent") then
-                        v3Ability:FireServer()
-                    end
-                end
-                
                 ReplicatedStorage.Remotes.CommF_:InvokeServer("ActivateAbility")
-                
-                VirtualInputManager:SendKeyPress(Enum.KeyCode.Y)
-                task.wait(0.1)
-                VirtualInputManager:SendKeyRelease(Enum.KeyCode.Y)
-                
-                VirtualInputManager:SendKeyPress(Enum.KeyCode.T)
-                task.wait(0.1)
-                VirtualInputManager:SendKeyRelease(Enum.KeyCode.T)
             end)
         end
     end
@@ -376,7 +381,7 @@ _G.SenakaTabs.Automation:AddToggle("SlaveToggle", {
 })
 
 _G.SenakaTabs.Automation:AddToggle("BypassTeleportToggle", {
-    Title = "Bypass Teleport",
+    Title = "Bypass Teleport (Cổng Tiki Banana)",
     Default = _G.Config.BypassTeleport,
     Callback = function(Value)
         _G.Config.BypassTeleport = Value
@@ -444,4 +449,4 @@ _G.SenakaTabs.Travel:AddButton({
     end
 })
 
-_G.SenakaSendNotification("SENAKA HUB", "Đã fix di chuyển & V3/V4!", 3)
+_G.SenakaSendNotification("SENAKA HUB", "Đã cập nhật Bypass Portal Tiki!", 3)
