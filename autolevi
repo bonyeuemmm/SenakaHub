@@ -2,7 +2,6 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
-local VirtualInputManager = game:GetService("VirtualInputManager")
 local CoreGui = game:GetService("CoreGui")
 local LocalPlayer = Players.LocalPlayer
 
@@ -121,12 +120,6 @@ pcall(function()
     end)
 end)
 
-_G.SenakaSendNotification = function(title, content, duration)
-    pcall(function()
-        Fluent:Notify({ Title = title, Content = content, Duration = duration or 3 })
-    end)
-end
-
 _G.SenakaCharacterMove = function(targetCFrame, speed)
     local char = LocalPlayer.Character
     if not char then return end
@@ -161,7 +154,6 @@ local function SmartBuyBoat()
             return ReplicatedStorage.Remotes.CommF_:InvokeServer("BuyBoat", boat)
         end)
         if success and res and res ~= "Failed" then
-            _G.SenakaSendNotification("Mua Thuyền", "Thành công: " .. boat)
             return true
         end
     end
@@ -199,19 +191,7 @@ task.spawn(function()
     while task.wait(1) do
         if _G.Config.AutoV3V4 then
             pcall(function()
-                ReplicatedStorage.Remotes.CommF_:InvokeServer("ActivateAbility")
-                
-                local vim = VirtualInputManager
-                
-                vim:SendKeyEvent(true, Enum.KeyCode.Y, false, game)
-                task.wait(0.05)
-                vim:SendKeyEvent(false, Enum.KeyCode.Y, false, game)
-                
-                task.wait(0.1)
-
-                vim:SendKeyEvent(true, Enum.KeyCode.T, false, game)
-                task.wait(0.05)
-                vim:SendKeyEvent(false, Enum.KeyCode.T, false, game)
+                ReplicatedStorage.Remotes.CommF_:InvokeServer("ProccessAbillity")
             end)
         end
     end
@@ -254,7 +234,6 @@ task.spawn(function()
             pcall(function()
                 ReplicatedStorage.Remotes.CommF_:InvokeServer("Travel", destName)
             end)
-            _G.SenakaSendNotification("Di chuyển", "Đang tới: " .. destName)
             _G.Config.AutoTravel = ""
         end
 
@@ -400,7 +379,6 @@ _G.SenakaTabs.Automation:AddToggle("AutoBuyBoatToggle", {
     end
 })
 
--- Tạo mục chọn (Dropdown) thay cho 2 nút bấm cũ trong Tab Travel
 _G.SenakaTabs.Travel:AddDropdown("TravelDropdown", {
     Title = "Chọn Đảo Để Di Chuyển",
     Values = {"Tiki Outpost", "Hydra Island"},
@@ -414,5 +392,3 @@ _G.SenakaTabs.Travel:AddDropdown("TravelDropdown", {
         end
     end
 })
-
-_G.SenakaSendNotification("SENAKA HUB", "Script đã load thành công!", 3)
