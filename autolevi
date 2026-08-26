@@ -124,16 +124,6 @@ end)
 _G.SenakaSendNotification = function(title, content, duration)
     pcall(function()
         Fluent:Notify({ Title = title, Content = content, Duration = duration or 3 })
-        local targetParent = gethui and gethui() or CoreGui
-        for _, gui in pairs(targetParent:GetChildren()) do
-            if gui:IsA("ScreenGui") then
-                for _, desc in pairs(gui:GetDescendants()) do
-                    if desc:IsA("TextLabel") and desc.Text == content then
-                        desc.TextColor3 = Color3.fromRGB(255, 255, 0)
-                    end
-                end
-            end
-        end
     end)
 end
 
@@ -206,18 +196,21 @@ RunService.Stepped:Connect(function()
 end)
 
 task.spawn(function()
-    while task.wait(0.5) do
+    while task.wait(1) do
         if _G.Config.AutoV3V4 then
             pcall(function()
                 ReplicatedStorage.Remotes.CommF_:InvokeServer("ActivateAbility")
                 
                 local vim = VirtualInputManager
+                
                 vim:SendKeyEvent(true, Enum.KeyCode.Y, false, game)
-                task.wait(0.02)
+                task.wait(0.05)
                 vim:SendKeyEvent(false, Enum.KeyCode.Y, false, game)
                 
+                task.wait(0.1)
+
                 vim:SendKeyEvent(true, Enum.KeyCode.T, false, game)
-                task.wait(0.02)
+                task.wait(0.05)
                 vim:SendKeyEvent(false, Enum.KeyCode.T, false, game)
             end)
         end
@@ -407,18 +400,19 @@ _G.SenakaTabs.Automation:AddToggle("AutoBuyBoatToggle", {
     end
 })
 
-_G.SenakaTabs.Travel:AddButton({
-    Title = "Về đảo Tiki (Tiki Outpost)",
-    Callback = function()
-        _G.Config.AutoTravel = "TikiOutpost"
+-- Tạo mục chọn (Dropdown) thay cho 2 nút bấm cũ trong Tab Travel
+_G.SenakaTabs.Travel:AddDropdown("TravelDropdown", {
+    Title = "Chọn Đảo Để Di Chuyển",
+    Values = {"Tiki Outpost", "Hydra Island"},
+    Multi = false,
+    Default = 1,
+    Callback = function(Value)
+        if Value == "Tiki Outpost" then
+            _G.Config.AutoTravel = "TikiOutpost"
+        elseif Value == "Hydra Island" then
+            _G.Config.AutoTravel = "HydraIsland"
+        end
     end
 })
 
-_G.SenakaTabs.Travel:AddButton({
-    Title = "Về đảo Hydra (Hydra Island)",
-    Callback = function()
-        _G.Config.AutoTravel = "HydraIsland"
-    end
-})
-
-_G.SenakaSendNotification("SENAKA HUB", "Đã cập nhật thành công!", 3)
+_G.SenakaSendNotification("SENAKA HUB", "Script đã load thành công!", 3)
