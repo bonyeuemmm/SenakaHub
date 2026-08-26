@@ -52,6 +52,7 @@ _G.Config = {
     IsSlave = false, 
     MasterName = "bonbicuttay_999",
     BypassTeleport = true,
+    WaterWalk = true,
     AutoPullLever = false,
     AutoKillMobs = false,
     AutoTravel = "",
@@ -216,13 +217,40 @@ local function CharacterMove(targetCFrame, speed)
 
     speed = speed or _G.Config.TweenSpeed
 
+    -- BẬT BYPASS TELEPORT: Lướt siêu tốc (Ultra-fast smooth tween) để triệt tiêu lỗi kẹt tọa độ và chống kick
     if _G.Config.BypassTeleport then
-        root.CFrame = targetCFrame
+        local distance = (root.Position - targetCFrame.Position).Magnitude
+        local bypassSpeed = 2000 -- Tốc độ cực nhanh
+        local duration = math.clamp(distance / bypassSpeed, 0.05, 0.5)
+        
+        hum.PlatformStand = true
+        local noclipConn
+        noclipConn = RunService.Stepped:Connect(function()
+            if char and char.Parent then
+                for _, part in pairs(char:GetChildren()) do
+                    if part:IsA("BasePart") then part.CanCollide = false end
+                end
+            else
+                if noclipConn then noclipConn:Disconnect() end
+            end
+        end)
+
+        local tween = TweenService:Create(root, TweenInfo.new(duration, Enum.EasingStyle.Linear), {CFrame = targetCFrame})
+        tween:Play()
+        tween.Completed:Wait()
+
+        if noclipConn then noclipConn:Disconnect() end
+        if hum and hum.Parent then hum.PlatformStand = false end
+        if char and char.Parent then
+            for _, part in pairs(char:GetChildren()) do
+                if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then part.CanCollide = true end
+            end
+        end
         return
     end
 
+    -- CHẾ ĐỘ THƯỜNG (TWEEN BÌNH THƯỜNG)
     hum.PlatformStand = true
-
     local noclipConn
     noclipConn = RunService.Stepped:Connect(function()
         if char and char.Parent then
@@ -234,24 +262,9 @@ local function CharacterMove(targetCFrame, speed)
         end
     end)
 
-    local bv = root:FindFirstChild("SenakaFlyBV") or Instance.new("BodyVelocity")
-    bv.Name = "SenakaFlyBV"
-    bv.MaxForce = Vector3.new(1e9, 1e9, 1e9)
-    bv.Velocity = Vector3.zero
-    bv.Parent = root
-
-    local bg = root:FindFirstChild("SenakaFlyBG") or Instance.new("BodyGyro")
-    bg.Name = "SenakaFlyBG"
-    bg.MaxTorque = Vector3.new(1e9, 1e9, 1e9)
-    bg.P = 10000
-    bg.CFrame = targetCFrame
-    bg.Parent = root
-
     local distance = (root.Position - targetCFrame.Position).Magnitude
     if distance < 5 then
         if noclipConn then noclipConn:Disconnect() end
-        if bv then bv:Destroy() end
-        if bg then bg:Destroy() end
         hum.PlatformStand = false
         return
     end
@@ -262,8 +275,6 @@ local function CharacterMove(targetCFrame, speed)
     tween:Play()
     tween.Completed:Connect(function()
         if noclipConn then noclipConn:Disconnect() end
-        if bv then bv:Destroy() end
-        if bg then bg:Destroy() end
         if hum and hum.Parent then hum.PlatformStand = false end
         if char and char.Parent then
             for _, part in pairs(char:GetChildren()) do
@@ -297,6 +308,23 @@ spawn(function()
         local Hum = Char and Char:FindFirstChild("Humanoid")
         local Root = Char and Char:FindFirstChild("HumanoidRootPart")
 
+        if _G.Config.WaterWalk and Root then
+            pcall(function()
+                if Root.Position.Y < 5 and Root.Position.Y > -50 then
+                    if not Root:FindFirstChild("WaterPlatform") then
+                        local p = Instance.new("Part")
+                        p.Name = "WaterPlatform"
+                        p.Size = Vector3.new(10, 1, 10)
+                        p.Anchored = true
+                        p.Transparency = 1
+                        p.CFrame = CFrame.new(Root.Position.X, 2, Root.Position.Z)
+                        p.Parent = workspace
+                        task.delay(0.5, function() if p then p:Destroy() end end)
+                    end
+                end
+            end)
+        end
+
         if _G.Config.AutoTravel ~= "" then
             local destName = _G.Config.AutoTravel
             pcall(function()
@@ -315,8 +343,7 @@ spawn(function()
                 
                 if not MyBoat then
                     if (Root.Position - TikiBoatCFrame.Position).Magnitude > 50 then
-                        local flyTween = CharacterMove(TikiBoatCFrame, _G.Config.TweenSpeed)
-                        if flyTween and typeof(flyTween) == "Tween" then flyTween.Completed:Wait() end
+                        CharacterMove(TikiBoatCFrame, _G.Config.TweenSpeed)
                         task.wait(0.3)
                     end
                     SmartBuyBoat()
@@ -393,22 +420,6 @@ spawn(function()
             end)
         end
 
-        if _G.Config.AutoKillMobs and Root and Hum and Hum.Health > 0 then
-            pcall(function()
-                for _, enemy in pairs(workspace.Enemies:GetChildren()) do
-                    local eRoot = enemy:FindFirstChild("HumanoidRootPart")
-                    local eHum = enemy:FindFirstChild("Humanoid")
-                    if eRoot and eHum and eHum.Health > 0 then
-                        if (eRoot.Position - Root.Position).Magnitude < 300 then
-                            Root.CFrame = eRoot.CFrame * CFrame.new(0, 5, 3)
-                            local tool = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Tool")
-                            if tool then tool:Activate() end
-                        end
-                    end
-                end
-            end)
-        end
-
     end
 end)
 
@@ -442,10 +453,18 @@ Tabs.Automation:AddToggle("SlaveToggle", {
 })
 
 Tabs.Automation:AddToggle("BypassTeleportToggle", {
-    Title = "Bypass Teleport (Dịch chuyển tức thời)",
+    Title = "Bypass Teleport (Lướt siêu tốc mượt)",
     Default = _G.Config.BypassTeleport,
     Callback = function(Value)
         _G.Config.BypassTeleport = Value
+    end
+})
+
+Tabs.Automation:AddToggle("WaterWalkToggle", {
+    Title = "Đứng Trên Nước (Water Walk)",
+    Default = _G.Config.WaterWalk,
+    Callback = function(Value)
+        _G.Config.WaterWalk = Value
     end
 })
 
@@ -454,14 +473,6 @@ Tabs.Automation:AddToggle("AutoPullLeverToggle", {
     Default = _G.Config.AutoPullLever,
     Callback = function(Value)
         _G.Config.AutoPullLever = Value
-    end
-})
-
-Tabs.Automation:AddToggle("AutoKillMobsToggle", {
-    Title = "Tự Động Đánh Quái Xung Quanh",
-    Default = _G.Config.AutoKillMobs,
-    Callback = function(Value)
-        _G.Config.AutoKillMobs = Value
     end
 })
 
