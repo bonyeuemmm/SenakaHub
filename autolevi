@@ -4,7 +4,6 @@ local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local CoreGui = game:GetService("CoreGui")
 local VirtualInputManager = game:GetService("VirtualInputManager")
-local VirtualUser = game:GetService("VirtualUser")
 local LocalPlayer = Players.LocalPlayer
 
 pcall(function()
@@ -189,26 +188,12 @@ RunService.Stepped:Connect(function()
     end
 end)
 
--- Tối ưu hóa bật tộc V3/V4 tương thích cả Mobile (VirtualUser) và PC (VirtualInputManager/Remote)
+-- Đã loại bỏ hoàn toàn việc click ảo liên tục gây liệt cảm ứng. Thay vào đó dùng Remote chuẩn sạch sẽ.
 task.spawn(function()
-    while task.wait(1) do
+    while task.wait(1.5) do
         if _G.Config.AutoV3V4 then
             pcall(function()
-                -- Cách 1: Kích hoạt thông qua Remote chính thống của Blox Fruits
                 ReplicatedStorage.Remotes.CommF_:InvokeServer("ProccessAbillity")
-            end)
-            pcall(function()
-                -- Cách 2: Tối ưu cho Mobile bằng VirtualUser giả lập phím T (nút biến hình/tộc)
-                if VirtualUser then
-                    VirtualUser:Button1Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
-                    VirtualUser:Button1Up(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
-                end
-                -- Giả lập phím T (hỗ trợ Delta, Arceus X,...)
-                if VirtualInputManager then
-                    VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.T, false, game)
-                    task.wait(0.05)
-                    VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.T, false, game)
-                end
             end)
         end
     end
@@ -388,7 +373,7 @@ _G.SenakaTabs.Automation:AddToggle("AutoAvoidSeaEventToggle", {
     end
 })
 
-_G.SenakaTabs.Automation:AddToggle("AutoBuyBoatTuple", {
+_G.SenakaTabs.Automation:AddToggle("AutoBuyBoatToggle", {
     Title = "Tự Động Mua Thuyền",
     Default = _G.Config.AutoBuyBoat,
     Callback = function(Value)
