@@ -37,6 +37,7 @@ _G.Config = {
     AutoV4 = false,
     AutoAvoidSeaEvent = true,
     AutoBuyBoat = true,
+    SelectedBoat = "Sleigh",
     AutoTravel = "",
     TweenSpeed = 300,
 }
@@ -149,14 +150,26 @@ _G.SenakaCharacterMove = function(targetCFrame, speed)
 end
 
 local function SmartBuyBoat()
-    local boatList = {"Sleigh", "Mirage", "FlowerBoat", "Speedboat", "Dinghy"}
-    for _, boat in ipairs(boatList) do
-        local success, res = pcall(function()
-            return ReplicatedStorage.Remotes.CommF_:InvokeServer("BuyBoat", boat)
+    local boatName = _G.Config.SelectedBoat or "Sleigh"
+    pcall(function()
+        Fluent:Notify({
+            Title = "Senaka Hub",
+            Content = "Đang tiến hành mua thuyền: " .. boatName,
+            Duration = 2
+        })
+    end)
+    local success, res = pcall(function()
+        return ReplicatedStorage.Remotes.CommF_:InvokeServer("BuyBoat", boatName)
+    end)
+    if success and res and res ~= "Failed" then
+        pcall(function()
+            Fluent:Notify({
+                Title = "Senaka Hub",
+                Content = "Đã mua thành công thuyền: " .. boatName,
+                Duration = 2
+            })
         end)
-        if success and res and res ~= "Failed" then
-            return true
-        end
+        return true
     end
     return false
 end
@@ -188,22 +201,19 @@ RunService.Stepped:Connect(function()
     end
 end)
 
--- [ĐÃ TỐI ƯU RIÊNG CHO MOBILE]: Tự động bật Tộc V3 bằng cách spam đa tầng an toàn (Remote + Kích hoạt phím kỹ năng tương thích mọi executor điện thoại)
+-- Tự động bật Tộc V3 tối ưu mobile
 task.spawn(function()
     while task.wait(1.2) do
         if _G.Config.AutoV3 then
             pcall(function()
-                -- Cách 1: Gọi lệnh server chính thức của Blox Fruits
                 ReplicatedStorage.Remotes.CommF_:InvokeServer("ProccessAbillity")
             end)
             pcall(function()
-                -- Cách 2: Tương thích trực tiếp qua Remote Event điều khiển kỹ năng Tộc V3 trên Mobile
                 if ReplicatedStorage:FindFirstChild("Remotes") and ReplicatedStorage.Remotes:FindFirstChild("CommE") then
                     ReplicatedStorage.Remotes.CommE:FireServer("ActivateAbility")
                 end
             end)
             pcall(function()
-                -- Cách 3: Giả lập phím bấm kỹ năng Tộc V3 (Phím T) hỗ trợ các executor điện thoại hỗ trợ VirtualInput
                 if game:GetService("VirtualInputManager") then
                     game:GetService("VirtualInputManager"):SendKeyEvent(true, Enum.KeyCode.T, false, game)
                     task.wait(0.05)
@@ -214,7 +224,7 @@ task.spawn(function()
     end
 end)
 
--- Tự động bật Tộc V4 (Chỉ bật khi đầy thanh đỏ, spam với tốc độ vừa phải tránh ban)
+-- Tự động bật Tộc V4
 task.spawn(function()
     while task.wait(0.8) do
         if _G.Config.AutoV4 then
@@ -407,7 +417,7 @@ _G.SenakaTabs.Automation:AddToggle("AutoBusoToggle", {
 })
 
 _G.SenakaTabs.Automation:AddToggle("AutoV3Toggle", {
-    Title = "Tự Động Bật Tộc V3 (Tối Ưu Mobile)",
+    Title = "Tự Động Bật Tộc V3",
     Default = _G.Config.AutoV3,
     Callback = function(Value)
         _G.Config.AutoV3 = Value
@@ -415,7 +425,7 @@ _G.SenakaTabs.Automation:AddToggle("AutoV3Toggle", {
 })
 
 _G.SenakaTabs.Automation:AddToggle("AutoV4Toggle", {
-    Title = "Tự Động Bật Tộc V4 (Chờ Đầy Thanh)",
+    Title = "Tự Động Bật Tộc V4",
     Default = _G.Config.AutoV4,
     Callback = function(Value)
         _G.Config.AutoV4 = Value
@@ -427,6 +437,16 @@ _G.SenakaTabs.Automation:AddToggle("AutoAvoidSeaEventToggle", {
     Default = _G.Config.AutoAvoidSeaEvent,
     Callback = function(Value)
         _G.Config.AutoAvoidSeaEvent = Value
+    end
+})
+
+_G.SenakaTabs.Automation:AddDropdown("BoatDropdown", {
+    Title = "Chọn Loại Thuyền Muốn Mua",
+    Values = {"Sleigh", "Mirage", "FlowerBoat", "Speedboat", "Dinghy"},
+    Multi = false,
+    Default = 1,
+    Callback = function(Value)
+        _G.Config.SelectedBoat = Value
     end
 })
 
