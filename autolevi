@@ -10,40 +10,32 @@ pcall(function()
     ReplicatedStorage.Remotes.CommF_:InvokeServer("SetTeam", "Marines")
 end)
 
-local function InitAntiBanSystem()
-    pcall(function()
-        local rawMeta = getrawmetatable(game)
-        if setreadonly then setreadonly(rawMeta, false) end
-        
-        local oldNamecall = rawMeta.__namecall
-        rawMeta.__namecall = newcclosure(function(self, ...)
-            local method = getnamecallmethod()
-            if method == "FireServer" or method == "InvokeServer" then
-                local nameStr = tostring(self)
-                if nameStr:find("Ban") or nameStr:find("Check") or nameStr:find("Admin") or nameStr:find("Detection") then
-                    return nil
-                end
-            end
-            if method == "Kick" or method == "kick" then
+pcall(function()
+    local rawMeta = getrawmetatable(game)
+    if setreadonly then setreadonly(rawMeta, false) end
+    local oldNamecall = rawMeta.__namecall
+    rawMeta.__namecall = newcclosure(function(self, ...)
+        local method = getnamecallmethod()
+        if method == "FireServer" or method == "InvokeServer" then
+            local nameStr = tostring(self)
+            if nameStr:find("Ban") or nameStr:find("Check") or nameStr:find("Admin") or nameStr:find("Detection") then
                 return nil
             end
-            return oldNamecall(self, ...)
-        end)
-        
-        if setreadonly then setreadonly(rawMeta, true) end
-    end)
-
-    pcall(function()
-        if getgenv then getgenv().AntiCheatBypass = true end
-        for _, v in pairs(getgc(true)) do
-            if type(v) == "table" and rawget(v, "Detected") then
-                v.Detected = function() return end
-            end
         end
+        if method == "Kick" or method == "kick" then return nil end
+        return oldNamecall(self, ...)
     end)
-end
+    if setreadonly then setreadonly(rawMeta, true) end
+end)
 
-InitAntiBanSystem()
+pcall(function()
+    if getgenv then getgenv().AntiCheatBypass = true end
+    for _, v in pairs(getgc(true)) do
+        if type(v) == "table" and rawget(v, "Detected") then
+            v.Detected = function() return end
+        end
+    end
+end)
 
 _G.Config = {
     IsMaster = false, 
@@ -65,10 +57,22 @@ _G.SenakaLocations = {
     LeviathanGate = CFrame.new(-16110, 15, 450)
 }
 
-local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
+local success, Fluent = pcall(function()
+    return loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/main/main.lua"))()
+end)
+
+if not success or not Fluent then
+    success, Fluent = pcall(function()
+        return loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
+    end)
+end
+
+if not success or not Fluent then return end
+
+_G.Fluent = Fluent
 
 _G.SenakaWindow = Fluent:CreateWindow({
-    Title = "SENAKA HUB | KAITUN LEVIATHAN (PART 1)",
+    Title = "SENAKA HUB | KAITUN LEVIATHAN",
     SubTitle = "By Pain & Gemini AI",
     TabWidth = 160,
     Size = UDim2.fromOffset(580, 460),
@@ -82,117 +86,44 @@ _G.SenakaTabs = {
     Travel = _G.SenakaWindow:AddTab({ Title = "Travel", Icon = "map" })
 }
 
-local function CreateToggleIcon()
-    pcall(function()
-        local sg = Instance.new("ScreenGui")
-        sg.Name = "SenakaToggleIcon"
-        sg.Parent = game:GetService("CoreGui") or LocalPlayer:WaitForChild("PlayerGui")
-        sg.ResetOnSpawn = false
-        
-        local btn = Instance.new("ImageButton")
-        btn.Size = UDim2.new(0, 50, 0, 50)
-        btn.Position = UDim2.new(0, 20, 0.4, 0)
-        btn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-        btn.Image = "rbxassetid://6023426915"
-        btn.Parent = sg
-        
-        local corner = Instance.new("UICorner")
-        corner.CornerRadius = UDim.new(1, 0)
-        corner.Parent = btn
-        
-        local stroke = Instance.new("UIStroke")
-        stroke.Color = Color3.fromRGB(255, 204, 0)
-        stroke.Thickness = 2
-        stroke.Parent = btn
-        
-        local dragging = false
-        local dragInput, dragStart, startPos
-        
-        btn.InputBegan:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-                dragging = true
-                dragStart = input.Position
-                startPos = btn.Position
-                input.Changed:Connect(function()
-                    if input.UserInputState == Enum.UserInputState.End then dragging = false end
-                end)
-            end
-        end)
-        
-        btn.InputChanged:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-                dragInput = input
-            end
-        end)
-        
-        UserInputService.InputChanged:Connect(function(input)
-            if input == dragInput and dragging then
-                local delta = input.Position - dragStart
-                btn.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-            end
-        end)
-        
-        btn.MouseButton1Click:Connect(function()
-            _G.SenakaWindow:Minimize()
-        end)
-    end)
-end
+pcall(function()
+    if game:GetService("CoreGui"):FindFirstChild("SenakaToggleIcon") then
+        game:GetService("CoreGui").SenakaToggleIcon:Destroy()
+    end
 
-CreateToggleIcon()
-
-_G.SenakaSendYellowNotice = function(title, message, duration)
-    pcall(function()
-        local sg = Instance.new("ScreenGui")
-        sg.Name = "SenakaYellowNotice"
-        sg.Parent = game:GetService("CoreGui") or LocalPlayer:WaitForChild("PlayerGui")
-        
-        local frame = Instance.new("Frame")
-        frame.Size = UDim2.new(0, 320, 0, 70)
-        frame.Position = UDim2.new(0.5, -160, 0.15, 0)
-        frame.BackgroundColor3 = Color3.fromRGB(255, 204, 0)
-        frame.BorderSizePixel = 0
-        frame.Parent = sg
-        
-        local uiCorner = Instance.new("UICorner")
-        uiCorner.CornerRadius = UDim.new(0, 8)
-        uiCorner.Parent = frame
-        
-        local titleLabel = Instance.new("TextLabel")
-        titleLabel.Size = UDim2.new(1, -20, 0, 25)
-        titleLabel.Position = UDim2.new(0, 10, 0, 5)
-        titleLabel.BackgroundTransparency = 1
-        titleLabel.Text = title
-        titleLabel.TextColor3 = Color3.fromRGB(0, 0, 0)
-        titleLabel.TextSize = 16
-        titleLabel.Font = Enum.Font.SourceSansBold
-        titleLabel.TextXAlignment = Enum.TextXAlignment.Left
-        titleLabel.Parent = frame
-        
-        local msgLabel = Instance.new("TextLabel")
-        msgLabel.Size = UDim2.new(1, -20, 0, 35)
-        msgLabel.Position = UDim2.new(0, 10, 0, 28)
-        msgLabel.BackgroundTransparency = 1
-        msgLabel.Text = message
-        msgLabel.TextColor3 = Color3.fromRGB(30, 30, 30)
-        msgLabel.TextSize = 13
-        msgLabel.Font = Enum.Font.SourceSans
-        msgLabel.TextWrapped = true
-        msgLabel.TextXAlignment = Enum.TextXAlignment.Left
-        msgLabel.Parent = frame
-        
-        task.delay(duration or 5, function()
-            if sg then sg:Destroy() end
-        end)
+    local sg = Instance.new("ScreenGui")
+    sg.Name = "SenakaToggleIcon"
+    sg.Parent = game:GetService("CoreGui") or LocalPlayer:WaitForChild("PlayerGui")
+    sg.ResetOnSpawn = false
+    
+    local btn = Instance.new("ImageButton")
+    btn.Size = UDim2.new(0, 50, 0, 50)
+    btn.Position = UDim2.new(0, 20, 0.4, 0)
+    btn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    btn.Image = "rbxassetid://6023426915"
+    btn.Parent = sg
+    
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(1, 0)
+    corner.Parent = btn
+    
+    local stroke = Instance.new("UIStroke")
+    stroke.Color = Color3.fromRGB(255, 204, 0)
+    stroke.Thickness = 2
+    stroke.Parent = btn
+    
+    btn.MouseButton1Click:Connect(function()
+        VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.LeftControl, false, game)
+        VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.LeftControl, false, game)
     end)
-end
+end)
 
 _G.SenakaSendNotification = function(title, content, duration)
     pcall(function()
-        Fluent:Notify({ Title = title, Content = content, Duration = duration or 3 })
+        _G.Fluent:Notify({ Title = title, Content = content, Duration = duration or 3 })
     end)
 end
 
--- HÀM DI CHUYỂN BẰNG BYPASS TELEPORT (TỰ ĐỘNG NGẮT NGAY KHI TẮT TOGGLE)
 _G.SenakaCharacterMove = function(targetCFrame, speed)
     local char = LocalPlayer.Character
     if not char then return end
@@ -213,14 +144,11 @@ _G.SenakaCharacterMove = function(targetCFrame, speed)
         
         hum.PlatformStand = true
         
-        local noclipConn
-        noclipConn = RunService.Stepped:Connect(function()
+        local noclipConn = RunService.Stepped:Connect(function()
             if char and char.Parent then
                 for _, part in pairs(char:GetChildren()) do
                     if part:IsA("BasePart") then part.CanCollide = false end
                 end
-            else
-                if noclipConn then noclipConn:Disconnect() end
             end
         end)
 
@@ -243,7 +171,6 @@ _G.SenakaCharacterMove = function(targetCFrame, speed)
             if root and root.Parent then
                 root.CFrame = startCFrame:Lerp(targetCFrame, alpha)
                 root.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-                root.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
             end
 
             if alpha >= 1 then
@@ -281,11 +208,8 @@ _G.SenakaCharacterMove = function(targetCFrame, speed)
         if noclipConn then noclipConn:Disconnect() end
         if hum and hum.Parent then hum.PlatformStand = false end
     end)
-
     return tween
 end
-
-_G.SenakaSendYellowNotice("PART 1 LOADED!", "Core và Bypass Teleport đã sẵn sàng!", 4)
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
 local VirtualInputManager = game:GetService("VirtualInputManager")
@@ -305,7 +229,6 @@ local function SmartBuyBoat()
     return false
 end
 
--- VÒNG LẶP CHÍNH XỬ LÝ TÍNH NĂNG
 spawn(function()
     while true do
         task.wait(0.4)
@@ -314,7 +237,6 @@ spawn(function()
         local Hum = Char and Char:FindFirstChild("Humanoid")
         local Root = Char and Char:FindFirstChild("HumanoidRootPart")
 
-        -- 1. ĐỨNG TRÊN NƯỚC (WATER WALK)
         if _G.Config.WaterWalk and Root then
             pcall(function()
                 if Root.Position.Y < 4 and Root.Position.Y > -100 then
@@ -336,7 +258,6 @@ spawn(function()
             end)
         end
 
-        -- 2. BẬT HAKI VŨ TRANG (BUSO)
         if _G.Config.AutoBuso and Char then
             pcall(function()
                 if not Char:FindFirstChild("HasBuso") then
@@ -345,7 +266,6 @@ spawn(function()
             end)
         end
 
-        -- 3. KÍCH HOẠT TỘC V3 / V4 (BẤM PHÍM Y VÀ T)
         if _G.Config.AutoV3V4 then
             pcall(function()
                 VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Y, false, game)
@@ -355,7 +275,6 @@ spawn(function()
             end)
         end
 
-        -- 4. NÉ TRÁNH SEA EVENT
         local isAvoidingEvent = false
         if _G.Config.AutoAvoidSeaEvent and Root then
             pcall(function()
@@ -374,7 +293,6 @@ spawn(function()
             end)
         end
 
-        -- 5. XỬ LÝ TRAVEL NHANH
         if _G.Config.AutoTravel ~= "" then
             local destName = _G.Config.AutoTravel
             pcall(function()
@@ -384,7 +302,6 @@ spawn(function()
             _G.Config.AutoTravel = ""
         end
 
-        -- 6. LOGIC CHỦ THUYỀN (MASTER) VÀ PHỤ (SLAVE)
         if not isAvoidingEvent then
             if _G.Config.IsMaster and Root and Hum and Hum.Health > 0 then
                 local IceIsland = workspace:FindFirstChild("LeviathanIceIsland")
@@ -408,7 +325,7 @@ spawn(function()
                     if Heart then
                         pcall(function()
                             ReplicatedStorage.Remotes.CommF_:InvokeServer("PullHeart")
-                            _G.SenakaSendNotification("Leviathan", "Đang tiến hành kéo tim về đích...")
+                            _G.SenakaSendNotification("Leviathan", "Đang kéo tim về...")
                         end)
                     end
                 else
@@ -463,7 +380,6 @@ spawn(function()
     end
 end)
 
--- GIAO DIỆN TAB AUTOMATION
 _G.SenakaTabs.Automation:AddInput("MasterNameInput", {
     Title = "Tên Tài Khoản Chính (Master)",
     Default = _G.Config.MasterName,
@@ -494,7 +410,7 @@ _G.SenakaTabs.Automation:AddToggle("SlaveToggle", {
 })
 
 _G.SenakaTabs.Automation:AddToggle("BypassTeleportToggle", {
-    Title = "Bypass Teleport (Tối ưu mượt mà, chống khựng)",
+    Title = "Bypass Teleport (Tối ưu mượt mà)",
     Default = _G.Config.BypassTeleport,
     Callback = function(Value)
         _G.Config.BypassTeleport = Value
@@ -510,7 +426,7 @@ _G.SenakaTabs.Automation:AddToggle("WaterWalkToggle", {
 })
 
 _G.SenakaTabs.Automation:AddToggle("AutoBusoToggle", {
-    Title = "Tự Động Bật Haki Vũ Trang (Buso)",
+    Title = "Tự Động Bật Haki Vũ Trang",
     Default = _G.Config.AutoBuso,
     Callback = function(Value)
         _G.Config.AutoBuso = Value
@@ -526,7 +442,7 @@ _G.SenakaTabs.Automation:AddToggle("AutoV3V4Toggle", {
 })
 
 _G.SenakaTabs.Automation:AddToggle("AutoAvoidSeaEventToggle", {
-    Title = "Tự Động Né Tránh Sea Event (Bay lên cao né thông minh)",
+    Title = "Tự Động Né Sea Event",
     Default = _G.Config.AutoAvoidSeaEvent,
     Callback = function(Value)
         _G.Config.AutoAvoidSeaEvent = Value
@@ -534,14 +450,13 @@ _G.SenakaTabs.Automation:AddToggle("AutoAvoidSeaEventToggle", {
 })
 
 _G.SenakaTabs.Automation:AddToggle("AutoBuyBoatToggle", {
-    Title = "Tự Động Mua Thuyền Khi Đến Đảo",
+    Title = "Tự Động Mua Thuyền",
     Default = _G.Config.AutoBuyBoat,
     Callback = function(Value)
         _G.Config.AutoBuyBoat = Value
     end
 })
 
--- GIAO DIỆN TAB TRAVEL
 _G.SenakaTabs.Travel:AddButton({
     Title = "Về đảo Tiki (Tiki Outpost)",
     Callback = function()
@@ -557,10 +472,10 @@ _G.SenakaTabs.Travel:AddButton({
 })
 
 _G.SenakaTabs.Travel:AddButton({
-    Title = "Đến Cổng Leviathan (Leviathan Gate)",
+    Title = "Đến Cổng Leviathan",
     Callback = function()
         _G.SenakaCharacterMove(_G.SenakaLocations.LeviathanGate, _G.Config.TweenSpeed)
     end
 })
 
-_G.SenakaSendYellowNotice("SENAKA HUB FULLY LOADED!",)
+_G.SenakaSendNotification("SENAKA HUB", "Đã nạp toàn bộ tính năng!", 5)
