@@ -71,7 +71,7 @@ _G.SenakaLocations = {
     DemonicFumeNpc = CFrame.new(5263, 2, -10410)
 }
 
-local targetParent = gethui and gethui() or CoreGui
+local targetParent = (syn and syn.protect_gui) and syn.protect_gui(CoreGui) or (gethui and gethui()) or CoreGui
 if targetParent:FindFirstChild("SenakaNotifyGui") then
     targetParent.SenakaNotifyGui:Destroy()
 end
@@ -480,7 +480,7 @@ _G.SenakaTabs = {
 }
 
 pcall(function()
-    local targetParent = gethui and gethui() or CoreGui
+    local targetParent = (syn and syn.protect_gui) and syn.protect_gui(CoreGui) or (gethui and gethui()) or CoreGui
     if targetParent:FindFirstChild("SenakaToggleIcon") then
         targetParent.SenakaToggleIcon:Destroy()
     end
@@ -678,7 +678,7 @@ _G.SenakaTabs.Travel:AddDropdown("TravelDropdown", {
         elseif Value == "Hydra Island" then
             _G.Config.AutoTravel = "HydraIsland"
         end
-        ShowNotify("System", "Traveling to: " .. Value, 2)
+        ShowNotify("System", "Traveling to: " .. tostring(Value), 2)
     end
 })
 
