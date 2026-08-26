@@ -67,8 +67,7 @@ _G.SenakaLocations = {
     Hydra = CFrame.new(5749, 610, -282),
     SpyNpc = CFrame.new(-16110, 20, 450),
     DemonicFumeNpc = CFrame.new(5263, 2, -10410)
-}
-_G.SenakaCharacterMove = function(targetCFrame, speed)
+}_G.SenakaCharacterMove = function(targetCFrame, speed)
     local char = LocalPlayer.Character
     if not char then return end
     local root = char:FindFirstChild("HumanoidRootPart")
@@ -266,12 +265,6 @@ task.spawn(function()
                         game:GetService("VirtualInputManager"):SendMouseButtonEvent(0, 0, 0, false, game, 1)
                     end
                 end)
-            else
-                _G.SenakaCharacterMove(_G.SenakaLocations.DemonicFumeNpc, _G.Config.TweenSpeed)
-                task.wait(1)
-                pcall(function()
-                    ReplicatedStorage.Remotes.CommF_:InvokeServer("BuySanguineArt")
-                end)
             end
         end
     end
@@ -320,7 +313,7 @@ task.spawn(function()
                         if not Hum.SeatPart then
                             local targetSeat = nil
                             for _, d in pairs(myBoat:GetDescendants()) do
-                                if (d:IsA("VehicleSeat") or d:IsA("Seat")) and not d.Occupant then
+if (d:IsA("VehicleSeat") or d:IsA("Seat")) and not d.Occupant then
                                     targetSeat = d
                                     break
                                 end
@@ -406,7 +399,6 @@ pcall(function()
     end
 end)
 
-local TweenService = game:GetService("TweenService")
 local targetParent = (syn and syn.protect_gui) and syn.protect_gui(CoreGui) or (gethui and gethui()) or CoreGui
 
 local sg = Instance.new("ScreenGui")
@@ -415,7 +407,7 @@ sg.ResetOnSpawn = false
 sg.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 sg.Parent = targetParent
 
-local btn = Instance.new("TextButton")
+local btn = Instance.new("ImageButton")
 btn.Name = "ToggleButton"
 btn.Size = UDim2.new(0, 50, 0, 50)
 btn.Position = UDim2.new(0, 20, 0.4, 0)
@@ -423,10 +415,9 @@ btn.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 btn.BorderSizePixel = 0
 btn.Active = true
 btn.Draggable = true
-btn.Text = "MENU"
-btn.TextColor3 = Color3.fromRGB(255, 170, 0)
-btn.TextSize = 12
-btn.FontFace = Font.fromName("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Bold)
+
+btn.Image = "rbxassetid://89042380317763"
+
 btn.Parent = sg
 
 local corner = Instance.new("UICorner")
