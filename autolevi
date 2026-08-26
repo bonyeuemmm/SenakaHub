@@ -33,7 +33,8 @@ _G.Config = {
     MasterName = "bonbicuttay_999",
     WaterWalk = true,
     AutoBuso = true,
-    AutoV3V4 = true,
+    AutoV3 = false,
+    AutoV4 = false,
     AutoAvoidSeaEvent = true,
     AutoBuyBoat = true,
     AutoTravel = "",
@@ -58,12 +59,11 @@ end
 
 if not success or not Fluent then return end
 
--- Đã chỉnh lại kích thước responsive tự thích ứng với điện thoại, tránh bị ép thành giao diện PC
 _G.SenakaWindow = Fluent:CreateWindow({
     Title = "SENAKA HUB",
     SubTitle = "By Pain & Gemini AI",
     TabWidth = 140,
-    Size = UDim2.new(0, 480, 0, 320), -- Kích thước chuẩn gọn gàng cho Mobile
+    Size = UDim2.new(0, 480, 0, 320),
     Acrylic = false,
     Theme = "Dark",
     MinimizeKey = Enum.KeyCode.LeftControl
@@ -74,7 +74,6 @@ _G.SenakaTabs = {
     Travel = _G.SenakaWindow:AddTab({ Title = "Travel", Icon = "map" })
 }
 
--- Tạo nút thu gọn/mở menu linh hoạt trên điện thoại
 pcall(function()
     local targetParent = gethui and gethui() or CoreGui
     if targetParent:FindFirstChild("SenakaToggleIcon") then
@@ -189,12 +188,45 @@ RunService.Stepped:Connect(function()
     end
 end)
 
--- Tự động bật V3/V4 an toàn không kẹt phím di chuyển
+-- Tự động bật Tộc V3
 task.spawn(function()
     while task.wait(1.5) do
-        if _G.Config.AutoV3V4 then
+        if _G.Config.AutoV3 then
             pcall(function()
                 ReplicatedStorage.Remotes.CommF_:InvokeServer("ProccessAbillity")
+            end)
+        end
+    end
+end)
+
+-- Tự động bật Tộc V4 thông minh: Spam kiểm tra và kích hoạt với độ trễ vừa phải (tránh ban/chống spam quá nhanh) khi đầy thanh đỏ
+task.spawn(function()
+    while task.wait(0.8) do
+        if _G.Config.AutoV4 then
+            pcall(function()
+                local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
+                local mainGui = playerGui and playerGui:FindFirstChild("Main")
+                local transformBar = mainGui and mainGui:FindFirstChild("TransformBar") or (playerGui and playerGui:FindFirstChild("TransformBar"))
+                
+                -- Kiểm tra nếu thanh đỏ/năng lượng đầy hoặc tiến hành kích hoạt định kỳ an toàn
+                local canTransform = true
+                if transformBar then
+                    local fillBar = transformBar:FindFirstChild("Bar") or transformBar:FindFirstChild("Fill")
+                    if fillBar and fillBar.Size.X.Scale < 0.95 then
+                        canTransform = false
+                    end
+                end
+
+                if canTransform then
+                    pcall(function()
+                        ReplicatedStorage.Remotes.CommF_:InvokeServer("ActivateRaceTransformation")
+                    end)
+                    pcall(function()
+                        game:GetService("VirtualInputManager"):SendKeyEvent(true, Enum.KeyCode.Y, false, game)
+                        task.wait(0.05)
+                        game:GetService("VirtualInputManager"):SendKeyEvent(false, Enum.KeyCode.Y, false, game)
+                    end)
+                end
             end)
         end
     end
@@ -358,11 +390,19 @@ _G.SenakaTabs.Automation:AddToggle("AutoBusoToggle", {
     end
 })
 
-_G.SenakaTabs.Automation:AddToggle("AutoV3V4Toggle", {
-    Title = "Tự Động Bật Tộc V3 / V4",
-    Default = _G.Config.AutoV3V4,
+_G.SenakaTabs.Automation:AddToggle("AutoV3Toggle", {
+    Title = "Tự Động Bật Tộc V3",
+    Default = _G.Config.AutoV3,
     Callback = function(Value)
-        _G.Config.AutoV3V4 = Value
+        _G.Config.AutoV3 = Value
+    end
+})
+
+_G.SenakaTabs.Automation:AddToggle("AutoV4Toggle", {
+    Title = "Tự Động Bật Tộc V4 (Chờ Đầy Thanh)",
+    Default = _G.Config.AutoV4,
+    Callback = function(Value)
+        _G.Config.AutoV4 = Value
     end
 })
 
