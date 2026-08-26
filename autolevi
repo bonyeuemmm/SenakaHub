@@ -50,7 +50,7 @@ InitAntiBanSystem()
 _G.Config = {
     IsMaster = false, 
     IsSlave = false, 
-    MasterName = "bonbicuttay_825",
+    MasterName = "bonbicuttay_999",
     AutoTravel = "",
     TweenSpeed = IsMobileDevice and 280 or 350,
 }
