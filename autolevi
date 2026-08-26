@@ -56,7 +56,6 @@ _G.Config = {
     AutoV3 = false,
     AutoV4 = false,
     AutoAvoidSeaEvent = true,
-    AutoBuyBoat = true,
     SelectedBoat = "Sleigh",
     AutoGetSanguineArt = false,
     AutoTravel = "",
@@ -237,44 +236,43 @@ end)
 
 task.spawn(function()
     while task.wait(0.5) do
-        if _G.Config.AutoGetSanguineArt then
-            pcall(function()
-                local char = LocalPlayer.Character
-                local hum = char and char:FindFirstChild("Humanoid")
-                local root = char and char:FindFirstChild("HumanoidRootPart")
-                if hum and hum.Health > 0 and root then
-                    local enemyTarget = nil
-                    for _, mob in pairs(workspace.Enemies:GetChildren()) do
-                        local mobRoot = mob:FindFirstChild("HumanoidRootPart")
-                        local mobHum = mob:FindFirstChild("Humanoid")
-                        if mobRoot and mobHum and mobHum.Health > 0 then
-                            if (mob.Name:find("Vampire") or mob.Name:find("TerrorShark") or mob.Name:find("FishTail") or mob.Name:find("Demonic")) then
-                                if (mobRoot.Position - root.Position).Magnitude < 2000 then
-                                    enemyTarget = mobRoot
-                                    break
-                                end
+        local Char = LocalPlayer.Character
+        local Hum = Char and Char:FindFirstChild("Humanoid")
+        local Root = Char and Char:FindFirstChild("HumanoidRootPart")
+
+        if _G.Config.AutoGetSanguineArt and Root and Hum and Hum.Health > 0 then
+            local enemyTarget = nil
+            if workspace:FindFirstChild("Enemies") then
+                for _, mob in pairs(workspace.Enemies:GetChildren()) do
+                    local mobRoot = mob:FindFirstChild("HumanoidRootPart")
+                    local mobHum = mob:FindFirstChild("Humanoid")
+                    if mobRoot and mobHum and mobHum.Health > 0 then
+                        if (mob.Name:find("Vampire") or mob.Name:find("TerrorShark") or mob.Name:find("FishTail") or mob.Name:find("Demonic")) then
+                            if (mobRoot.Position - Root.Position).Magnitude < 2000 then
+                                enemyTarget = mobRoot
+                                break
                             end
                         end
                     end
-
-                    if enemyTarget then
-                        root.CFrame = enemyTarget.CFrame * CFrame.new(0, 5, 3)
-                        pcall(function()
-                            if game:GetService("VirtualInputManager") then
-                                game:GetService("VirtualInputManager"):SendMouseButtonEvent(0, 0, 0, true, game, 1)
-                                task.wait(0.05)
-                                game:GetService("VirtualInputManager"):SendMouseButtonEvent(0, 0, 0, false, game, 1)
-                            end
-                        end)
-                    else
-                        _G.SenakaCharacterMove(_G.SenakaLocations.DemonicFumeNpc, _G.Config.TweenSpeed)
-                        task.wait(1)
-                        pcall(function()
-                            ReplicatedStorage.Remotes.CommF_:InvokeServer("BuySanguineArt")
-                        end)
-                    end
                 end
-            end)
+            end
+
+            if enemyTarget then
+                Root.CFrame = enemyTarget.CFrame * CFrame.new(0, 5, 3)
+                pcall(function()
+                    if game:GetService("VirtualInputManager") then
+                        game:GetService("VirtualInputManager"):SendMouseButtonEvent(0, 0, 0, true, game, 1)
+                        task.wait(0.05)
+                        game:GetService("VirtualInputManager"):SendMouseButtonEvent(0, 0, 0, false, game, 1)
+                    end
+                end)
+            else
+                _G.SenakaCharacterMove(_G.SenakaLocations.DemonicFumeNpc, _G.Config.TweenSpeed)
+                task.wait(1)
+                pcall(function()
+                    ReplicatedStorage.Remotes.CommF_:InvokeServer("BuySanguineArt")
+                end)
+            end
         end
     end
 end)
@@ -315,9 +313,7 @@ task.spawn(function()
                         if (Root.Position - _G.SenakaLocations.TikiBoat.Position).Magnitude > 40 then
                             _G.SenakaCharacterMove(_G.SenakaLocations.TikiBoat, _G.Config.TweenSpeed)
                         else
-                            if _G.Config.AutoBuyBoat then 
-                                SmartBuyBoat() 
-                            end
+                            SmartBuyBoat()
                         end
                     else
                         SecureBoatPhysics(myBoat)
@@ -419,7 +415,7 @@ sg.ResetOnSpawn = false
 sg.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 sg.Parent = targetParent
 
-local btn = Instance.new("ImageButton")
+local btn = Instance.new("TextButton")
 btn.Name = "ToggleButton"
 btn.Size = UDim2.new(0, 50, 0, 50)
 btn.Position = UDim2.new(0, 20, 0.4, 0)
@@ -427,9 +423,11 @@ btn.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 btn.BorderSizePixel = 0
 btn.Active = true
 btn.Draggable = true
+btn.Text = "MENU"
+btn.TextColor3 = Color3.fromRGB(255, 170, 0)
+btn.TextSize = 12
+btn.FontFace = Font.fromName("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Bold)
 btn.Parent = sg
-
-btn.Image = "rbxassetid://89042380317763"
 
 local corner = Instance.new("UICorner")
 corner.CornerRadius = UDim.new(0, 12)
@@ -549,14 +547,6 @@ _G.SenakaTabs.Automation:AddDropdown("BoatDropdown", {
     Default = 1,
     Callback = function(Value)
         _G.Config.SelectedBoat = Value
-    end
-})
-
-_G.SenakaTabs.Automation:AddToggle("AutoBuyBoatToggle", {
-    Title = "Auto Buy Boat",
-    Default = _G.Config.AutoBuyBoat,
-    Callback = function(Value)
-        _G.Config.AutoBuyBoat = Value
     end
 })
 
