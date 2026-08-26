@@ -44,7 +44,7 @@ _G.Config = {
 
 _G.SenakaLocations = {
     TikiBoat = CFrame.new(-16234, 9, 416),
-    TikiPortal = CFrame.new(-16180, 20, 425),
+    TikiPortal = CFrame.new(-16180, 20, 425), -- Vị trí cổng dịch chuyển Tiki như ảnh
     Hydra = CFrame.new(5749, 610, -282),
     LeviathanGate = CFrame.new(-16110, 15, 450)
 }
@@ -129,44 +129,60 @@ _G.SenakaSendNotification = function(title, content, duration)
     end)
 end
 
-_G.BypassPortalTeleport = function(targetCFrame)
+-- Cơ chế Bypass mới: Reset nhân vật rồi dịch chuyển thẳng qua cổng Tiki
+_G.BypassResetTeleport = function(targetCFrame)
     local char = LocalPlayer.Character
     if not char then return end
     local root = char:FindFirstChild("HumanoidRootPart")
-    local hum = char:FindFirstChild("Humanoid")
-    if not root or not hum then return end
+    if not root then return end
 
     if (root.Position - targetCFrame.Position).Magnitude > 500 then
         pcall(function()
-            ReplicatedStorage.Remotes.CommF_:InvokeServer("Travel", "TikiOutpost")
+            if char:FindFirstChild("Humanoid") then
+                char.Humanoid.Health = 0 -- Reset nhân vật
+            end
         end)
-        task.wait(1)
-        root.CFrame = _G.SenakaLocations.TikiPortal
-        task.wait(0.2)
+        
+        -- Chờ nhân vật hồi sinh xong
+        LocalPlayer.CharacterAdded:Wait()
+        task.wait(0.5)
+        
+        local newChar = LocalPlayer.Character
+        local newRoot = newChar and newChar:WaitForChild("HumanoidRootPart", 5)
+        if newRoot then
+            newRoot.CFrame = _G.SenakaLocations.TikiPortal
+            task.wait(0.2)
+        end
     end
 
+    local currentChars = LocalPlayer.Character
+    if not currentChars then return end
+    local currentRoot = currentChars:FindFirstChild("HumanoidRootPart")
+    local currentHum = currentChars:FindFirstChild("Humanoid")
+    if not currentRoot or not currentHum then return end
+
     local noclipConn = RunService.Stepped:Connect(function()
-        if char and char.Parent then
-            for _, part in pairs(char:GetChildren()) do
+        if currentChars and currentChars.Parent then
+            for _, part in pairs(currentChars:GetChildren()) do
                 if part:IsA("BasePart") then part.CanCollide = false end
             end
         end
     end)
 
-    hum.PlatformStand = true
-    local distance = (root.Position - targetCFrame.Position).Magnitude
+    currentHum.PlatformStand = true
+    local distance = (currentRoot.Position - targetCFrame.Position).Magnitude
     local duration = distance / _G.Config.TweenSpeed
-    local tween = TweenService:Create(root, TweenInfo.new(duration, Enum.EasingStyle.Linear), {CFrame = targetCFrame})
+    local tween = TweenService:Create(currentRoot, TweenInfo.new(duration, Enum.EasingStyle.Linear), {CFrame = targetCFrame})
 
     tween:Play()
     tween.Completed:Wait()
     if noclipConn then noclipConn:Disconnect() end
-    hum.PlatformStand = false
+    currentHum.PlatformStand = false
 end
 
 _G.SenakaCharacterMove = function(targetCFrame, speed)
     if _G.Config.BypassTeleport then
-        _G.BypassPortalTeleport(targetCFrame)
+        _G.BypassResetTeleport(targetCFrame)
     else
         local char = LocalPlayer.Character
         if not char then return end
@@ -236,11 +252,20 @@ RunService.Stepped:Connect(function()
     end
 end)
 
+-- Sửa lại logic Bật Tộc V3/V4 hoạt động ổn định hơn
 task.spawn(function()
-    while task.wait(0.5) do
+    while task.wait(1) do
         if _G.Config.AutoV3V4 then
             pcall(function()
                 ReplicatedStorage.Remotes.CommF_:InvokeServer("ActivateAbility")
+                
+                VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Y, false, game)
+                task.wait(0.05)
+                VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Y, false, game)
+                
+                VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.T, false, game)
+                task.wait(0.05)
+                VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.T, false, game)
             end)
         end
     end
@@ -381,7 +406,7 @@ _G.SenakaTabs.Automation:AddToggle("SlaveToggle", {
 })
 
 _G.SenakaTabs.Automation:AddToggle("BypassTeleportToggle", {
-    Title = "Bypass Teleport (Cổng Tiki Banana)",
+    Title = "Bypass Teleport (Reset + Cổng Tiki)",
     Default = _G.Config.BypassTeleport,
     Callback = function(Value)
         _G.Config.BypassTeleport = Value
@@ -449,4 +474,4 @@ _G.SenakaTabs.Travel:AddButton({
     end
 })
 
-_G.SenakaSendNotification("SENAKA HUB", "Đã cập nhật Bypass Portal Tiki!", 3)
+_G.SenakaSendNotification("SENAKA HUB", "Đã cập nhật Bypass Reset & V3/V4!", 3)
