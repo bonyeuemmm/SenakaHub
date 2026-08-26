@@ -51,6 +51,9 @@ _G.Config = {
     IsMaster = false, 
     IsSlave = false, 
     MasterName = "bonbicuttay_999",
+    BypassTeleport = true,
+    AutoPullLever = false,
+    AutoKillMobs = false,
     AutoTravel = "",
     TweenSpeed = IsMobileDevice and 280 or 350,
 }
@@ -212,6 +215,12 @@ local function CharacterMove(targetCFrame, speed)
     if not root or not hum then return end
 
     speed = speed or _G.Config.TweenSpeed
+
+    if _G.Config.BypassTeleport then
+        root.CFrame = targetCFrame
+        return
+    end
+
     hum.PlatformStand = true
 
     local noclipConn
@@ -323,6 +332,10 @@ spawn(function()
                         SendNotification("Leviathan", "Đang tiến hành kéo tim về đích...")
                     end)
                 end
+            else
+                if (Root.Position - TikiBoatCFrame.Position).Magnitude > 100 then
+                    CharacterMove(TikiBoatCFrame, _G.Config.TweenSpeed)
+                end
             end
         end
 
@@ -367,6 +380,35 @@ spawn(function()
             end
         end
 
+        if _G.Config.AutoPullLever and Root and Hum and Hum.Health > 0 then
+            pcall(function()
+                for _, obj in pairs(workspace:GetDescendants()) do
+                    if obj.Name:lower():find("lever") or obj.Name:lower():find("switch") then
+                        if obj:IsA("BasePart") and (obj.Position - Root.Position).Magnitude < 20 then
+                            firetouchinterest(Root, obj, 0)
+                            firetouchinterest(Root, obj, 1)
+                        end
+                    end
+                end
+            end)
+        end
+
+        if _G.Config.AutoKillMobs and Root and Hum and Hum.Health > 0 then
+            pcall(function()
+                for _, enemy in pairs(workspace.Enemies:GetChildren()) do
+                    local eRoot = enemy:FindFirstChild("HumanoidRootPart")
+                    local eHum = enemy:FindFirstChild("Humanoid")
+                    if eRoot and eHum and eHum.Health > 0 then
+                        if (eRoot.Position - Root.Position).Magnitude < 300 then
+                            Root.CFrame = eRoot.CFrame * CFrame.new(0, 5, 3)
+                            local tool = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Tool")
+                            if tool then tool:Activate() end
+                        end
+                    end
+                end
+            end)
+        end
+
     end
 end)
 
@@ -396,6 +438,30 @@ Tabs.Automation:AddToggle("SlaveToggle", {
     Callback = function(Value)
         _G.Config.IsSlave = Value
         if Value then _G.Config.IsMaster = false end
+    end
+})
+
+Tabs.Automation:AddToggle("BypassTeleportToggle", {
+    Title = "Bypass Teleport (Dịch chuyển tức thời)",
+    Default = _G.Config.BypassTeleport,
+    Callback = function(Value)
+        _G.Config.BypassTeleport = Value
+    end
+})
+
+Tabs.Automation:AddToggle("AutoPullLeverToggle", {
+    Title = "Tự Động Kéo Cần / Gạt Công Tắc",
+    Default = _G.Config.AutoPullLever,
+    Callback = function(Value)
+        _G.Config.AutoPullLever = Value
+    end
+})
+
+Tabs.Automation:AddToggle("AutoKillMobsToggle", {
+    Title = "Tự Động Đánh Quái Xung Quanh",
+    Default = _G.Config.AutoKillMobs,
+    Callback = function(Value)
+        _G.Config.AutoKillMobs = Value
     end
 })
 
