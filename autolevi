@@ -3,7 +3,6 @@ local TweenService = game:GetService("TweenService")
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
-local VirtualInputManager = game:GetService("VirtualInputManager")
 local LocalPlayer = Players.LocalPlayer
 
 pcall(function()
@@ -28,15 +27,6 @@ pcall(function()
     if setreadonly then setreadonly(rawMeta, true) end
 end)
 
-pcall(function()
-    if getgenv then getgenv().AntiCheatBypass = true end
-    for _, v in pairs(getgc(true)) do
-        if type(v) == "table" and rawget(v, "Detected") then
-            v.Detected = function() return end
-        end
-    end
-end)
-
 _G.Config = {
     IsMaster = false, 
     IsSlave = false, 
@@ -48,7 +38,7 @@ _G.Config = {
     AutoAvoidSeaEvent = true,
     AutoBuyBoat = true,
     AutoTravel = "",
-    TweenSpeed = 350,
+    TweenSpeed = 300,
 }
 
 _G.SenakaLocations = {
@@ -72,7 +62,7 @@ if not success or not Fluent then return end
 _G.Fluent = Fluent
 
 _G.SenakaWindow = Fluent:CreateWindow({
-    Title = "SENAKA HUB | KAITUN LEVIATHAN",
+    Title = "SENAKA HUB | FIX WATER WALK",
     SubTitle = "By Pain & Gemini AI",
     TabWidth = 160,
     Size = UDim2.fromOffset(580, 460),
@@ -85,38 +75,6 @@ _G.SenakaTabs = {
     Automation = _G.SenakaWindow:AddTab({ Title = "Automation", Icon = "home" }),
     Travel = _G.SenakaWindow:AddTab({ Title = "Travel", Icon = "map" })
 }
-
-pcall(function()
-    if game:GetService("CoreGui"):FindFirstChild("SenakaToggleIcon") then
-        game:GetService("CoreGui").SenakaToggleIcon:Destroy()
-    end
-
-    local sg = Instance.new("ScreenGui")
-    sg.Name = "SenakaToggleIcon"
-    sg.Parent = game:GetService("CoreGui") or LocalPlayer:WaitForChild("PlayerGui")
-    sg.ResetOnSpawn = false
-    
-    local btn = Instance.new("ImageButton")
-    btn.Size = UDim2.new(0, 50, 0, 50)
-    btn.Position = UDim2.new(0, 20, 0.4, 0)
-    btn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-    btn.Image = "rbxassetid://6023426915"
-    btn.Parent = sg
-    
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(1, 0)
-    corner.Parent = btn
-    
-    local stroke = Instance.new("UIStroke")
-    stroke.Color = Color3.fromRGB(255, 204, 0)
-    stroke.Thickness = 2
-    stroke.Parent = btn
-    
-    btn.MouseButton1Click:Connect(function()
-        VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.LeftControl, false, game)
-        VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.LeftControl, false, game)
-    end)
-end)
 
 _G.SenakaSendNotification = function(title, content, duration)
     pcall(function()
@@ -131,66 +89,10 @@ _G.SenakaCharacterMove = function(targetCFrame, speed)
     local hum = char:FindFirstChild("Humanoid")
     if not root or not hum then return end
 
+    if (root.Position - targetCFrame.Position).Magnitude < 8 then return end
+
     speed = speed or _G.Config.TweenSpeed
 
-    if not _G.Config.IsMaster and not _G.Config.IsSlave and _G.Config.AutoTravel == "" then
-        hum.PlatformStand = false
-        return
-    end
-
-    if _G.Config.BypassTeleport then
-        local distance = (root.Position - targetCFrame.Position).Magnitude
-        if distance < 3 then return end
-        
-        hum.PlatformStand = true
-        
-        local noclipConn = RunService.Stepped:Connect(function()
-            if char and char.Parent then
-                for _, part in pairs(char:GetChildren()) do
-                    if part:IsA("BasePart") then part.CanCollide = false end
-                end
-            end
-        end)
-
-        local duration = math.clamp(distance / speed, 0.05, 0.8)
-        local startTime = tick()
-        local startCFrame = root.CFrame
-
-        local connection
-        connection = RunService.RenderStepped:Connect(function()
-            if (not _G.Config.IsMaster and not _G.Config.IsSlave and _G.Config.AutoTravel == "") or not _G.Config.BypassTeleport then
-                if connection then connection:Disconnect() end
-                if noclipConn then noclipConn:Disconnect() end
-                hum.PlatformStand = false
-                return
-            end
-
-            local elapsed = tick() - startTime
-            local alpha = math.clamp(elapsed / duration, 0, 1)
-            
-            if root and root.Parent then
-                root.CFrame = startCFrame:Lerp(targetCFrame, alpha)
-                root.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-            end
-
-            if alpha >= 1 then
-                if connection then connection:Disconnect() end
-            end
-        end)
-
-        task.wait(duration)
-        if connection then connection:Disconnect() end
-        if noclipConn then noclipConn:Disconnect() end
-
-        if hum and hum.Parent then hum.PlatformStand = false end
-        if root and root.Parent then
-            root.CFrame = targetCFrame
-            root.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-        end
-        return
-    end
-
-    hum.PlatformStand = true
     local noclipConn = RunService.Stepped:Connect(function()
         if char and char.Parent then
             for _, part in pairs(char:GetChildren()) do
@@ -199,20 +101,36 @@ _G.SenakaCharacterMove = function(targetCFrame, speed)
         end
     end)
 
+    if _G.Config.BypassTeleport then
+        local distance = (root.Position - targetCFrame.Position).Magnitude
+        local steps = math.floor(distance / 25)
+        
+        for i = 1, steps do
+            if not _G.Config.IsMaster and not _G.Config.IsSlave and _G.Config.AutoTravel == "" then break end
+            root.CFrame = root.CFrame:Lerp(targetCFrame, i / steps)
+            root.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+            task.wait(0.02)
+        end
+        
+        root.CFrame = targetCFrame
+        if noclipConn then noclipConn:Disconnect() end
+        hum.PlatformStand = false
+        return
+    end
+
+    hum.PlatformStand = true
     local distance = (root.Position - targetCFrame.Position).Magnitude
     local duration = distance / speed
     local tween = TweenService:Create(root, TweenInfo.new(duration, Enum.EasingStyle.Linear), {CFrame = targetCFrame})
 
     tween:Play()
-    tween.Completed:Connect(function()
-        if noclipConn then noclipConn:Disconnect() end
-        if hum and hum.Parent then hum.PlatformStand = false end
-    end)
-    return tween
+    tween.Completed:Wait()
+    if noclipConn then noclipConn:Disconnect() end
+    hum.PlatformStand = false
 end
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
-local VirtualInputManager = game:GetService("VirtualInputManager")
+local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
 
 local function SmartBuyBoat()
@@ -229,49 +147,62 @@ local function SmartBuyBoat()
     return false
 end
 
+-- TẠO VÀ CẬP NHẬT BỆ ĐỠ ĐỨNG TRÊN NƯỚC (RENDERSTEPPED ĐỂ KHÔNG BAO GIỜ BỊ RƠI)
+local WaterPlatform = Instance.new("Part")
+WaterPlatform.Name = "SenakaWaterPlatform"
+WaterPlatform.Size = Vector3.new(30, 1, 30)
+WaterPlatform.Anchored = true
+WaterPlatform.Transparency = 1
+WaterPlatform.CanCollide = false
+WaterPlatform.Parent = workspace
+
+RunService.RenderStepped:Connect(function()
+    pcall(function()
+        if _G.Config.WaterWalk then
+            local char = LocalPlayer.Character
+            local root = char and char:FindFirstChild("HumanoidRootPart")
+            if root then
+                if root.Position.Y < 10 and root.Position.Y > -100 then
+                    WaterPlatform.CFrame = CFrame.new(root.Position.X, 1.5, root.Position.Z)
+                    WaterPlatform.CanCollide = true
+                else
+                    WaterPlatform.CanCollide = false
+                end
+            else
+                WaterPlatform.CanCollide = false
+            end
+        else
+            WaterPlatform.CanCollide = false
+        end
+    end)
+end)
+
+-- VÒNG LẶP AUTO V3 / V4
 spawn(function()
     while true do
-        task.wait(0.4)
+        task.wait(1)
+        if _G.Config.AutoV3V4 then
+            pcall(function()
+                ReplicatedStorage.Remotes.CommF_:InvokeServer("ActivateAbility")
+            end)
+        end
+    end
+end)
+
+-- VÒNG LẶP CHÍNH
+spawn(function()
+    while true do
+        task.wait(0.5)
         
         local Char = LocalPlayer.Character
         local Hum = Char and Char:FindFirstChild("Humanoid")
         local Root = Char and Char:FindFirstChild("HumanoidRootPart")
-
-        if _G.Config.WaterWalk and Root then
-            pcall(function()
-                if Root.Position.Y < 4 and Root.Position.Y > -100 then
-                    local existingPlatform = workspace:FindFirstChild("WaterPlatform_" .. LocalPlayer.Name)
-                    if not existingPlatform then
-                        local p = Instance.new("Part")
-                        p.Name = "WaterPlatform_" .. LocalPlayer.Name
-                        p.Size = Vector3.new(14, 1, 14)
-                        p.Anchored = true
-                        p.Transparency = 1
-                        p.CanCollide = true
-                        p.CFrame = CFrame.new(Root.Position.X, 1.5, Root.Position.Z)
-                        p.Parent = workspace
-                        task.delay(0.6, function() if p then p:Destroy() end end)
-                    else
-                        existingPlatform.CFrame = CFrame.new(Root.Position.X, 1.5, Root.Position.Z)
-                    end
-                end
-            end)
-        end
 
         if _G.Config.AutoBuso and Char then
             pcall(function()
                 if not Char:FindFirstChild("HasBuso") then
                     ReplicatedStorage.Remotes.CommF_:InvokeServer("Buso")
                 end
-            end)
-        end
-
-        if _G.Config.AutoV3V4 then
-            pcall(function()
-                VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Y, false, game)
-                VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Y, false, game)
-                VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.T, false, game)
-                VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.T, false, game)
             end)
         end
 
@@ -285,7 +216,7 @@ spawn(function()
                             local monsterPart = obj:FindFirstChild("HumanoidRootPart") or obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart")
                             if monsterPart and (monsterPart.Position - Root.Position).Magnitude < 300 then
                                 isAvoidingEvent = true
-                                Root.CFrame = Root.CFrame + Vector3.new(0, 200, 0)
+                                Root.CFrame = Root.CFrame + Vector3.new(0, 150, 0)
                             end
                         end
                     end
@@ -309,23 +240,16 @@ spawn(function()
                 
                 if IceIsland then
                     local MyBoat = workspace:FindFirstChild(LocalPlayer.Name .. "_Boat")
-                    
                     if not MyBoat then
                         if (Root.Position - _G.SenakaLocations.TikiBoat.Position).Magnitude > 50 then
                             _G.SenakaCharacterMove(_G.SenakaLocations.TikiBoat, _G.Config.TweenSpeed)
-                            task.wait(0.3)
                         end
                         if _G.Config.AutoBuyBoat then SmartBuyBoat() end
-                    else
-                        for _, part in pairs(MyBoat:GetDescendants()) do
-                            if part:IsA("BasePart") then part.CanCollide = false end
-                        end
                     end
 
                     if Heart then
                         pcall(function()
                             ReplicatedStorage.Remotes.CommF_:InvokeServer("PullHeart")
-                            _G.SenakaSendNotification("Leviathan", "Đang kéo tim về...")
                         end)
                     end
                 else
@@ -337,38 +261,32 @@ spawn(function()
 
             if _G.Config.IsSlave and Root and Hum and Hum.Health > 0 then
                 local MasterPlayer = nil
-                pcall(function()
-                    for _, p in pairs(Players:GetPlayers()) do
-                        if p ~= LocalPlayer and (p.Name:lower() == _G.Config.MasterName:lower() or p.DisplayName:lower() == _G.Config.MasterName:lower()) then
-                            MasterPlayer = p
-                            break
-                        end
+                for _, p in pairs(Players:GetPlayers()) do
+                    if p ~= LocalPlayer and (p.Name:lower() == _G.Config.MasterName:lower() or p.DisplayName:lower() == _G.Config.MasterName:lower()) then
+                        MasterPlayer = p
+                        break
                     end
-                end)
+                end
 
                 if MasterPlayer and MasterPlayer.Character then
                     local MasterRoot = MasterPlayer.Character:FindFirstChild("HumanoidRootPart")
                     if MasterRoot then
                         if not Hum.SeatPart then
                             local TargetSeat = nil
-                            pcall(function()
-                                for _, obj in pairs(workspace:GetDescendants()) do
-                                    if (obj:IsA("VehicleSeat") or obj:IsA("Seat")) and not obj.Occupant then
-                                        if (obj.Position - MasterRoot.Position).Magnitude < 150 then
-                                            TargetSeat = obj
-                                            break
-                                        end
+                            for _, obj in pairs(workspace:GetDescendants()) do
+                                if (obj:IsA("VehicleSeat") or obj:IsA("Seat")) and not obj.Occupant then
+                                    if (obj.Position - MasterRoot.Position).Magnitude < 100 then
+                                        TargetSeat = obj
+                                        break
                                     end
                                 end
-                            end)
+                            end
 
                             if TargetSeat then
-                                pcall(function()
-                                    Root.CFrame = TargetSeat.CFrame * CFrame.new(0, 2, 0)
-                                    task.wait(0.1)
-                                    TargetSeat:Sit(Hum)
-                                end)
-                            elseif (Root.Position - MasterRoot.Position).Magnitude > 15 then
+                                Root.CFrame = TargetSeat.CFrame * CFrame.new(0, 2, 0)
+                                task.wait(0.2)
+                                TargetSeat:Sit(Hum)
+                            elseif (Root.Position - MasterRoot.Position).Magnitude > 20 then
                                 _G.SenakaCharacterMove(MasterRoot.CFrame * CFrame.new(0, 3, -3), _G.Config.TweenSpeed)
                             end
                         end
@@ -383,7 +301,6 @@ end)
 _G.SenakaTabs.Automation:AddInput("MasterNameInput", {
     Title = "Tên Tài Khoản Chính (Master)",
     Default = _G.Config.MasterName,
-    Placeholder = "Nhập chính xác tên acc chính",
     Numeric = false,
     Finished = false,
     Callback = function(Value)
@@ -410,7 +327,7 @@ _G.SenakaTabs.Automation:AddToggle("SlaveToggle", {
 })
 
 _G.SenakaTabs.Automation:AddToggle("BypassTeleportToggle", {
-    Title = "Bypass Teleport (Tối ưu mượt mà)",
+    Title = "Bypass Teleport",
     Default = _G.Config.BypassTeleport,
     Callback = function(Value)
         _G.Config.BypassTeleport = Value
@@ -478,4 +395,4 @@ _G.SenakaTabs.Travel:AddButton({
     end
 })
 
-_G.SenakaSendNotification("SENAKA HUB", "Đã nạp toàn bộ tính năng!", 5)
+_G.SenakaSendNotification("SENAKA HUB", "Đã fix hoàn toàn lỗi Đứng Trên Nước!", 5)
