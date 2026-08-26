@@ -60,7 +60,7 @@ end
 if not success or not Fluent then return end
 
 _G.SenakaWindow = Fluent:CreateWindow({
-    Title = "SENAKA HUB",
+    Title = "SENAKA HUB | KAITUN LEVIATHAN",
     SubTitle = "By Pain & Gemini AI",
     TabWidth = 140,
     Size = UDim2.new(0, 480, 0, 320),
@@ -188,18 +188,33 @@ RunService.Stepped:Connect(function()
     end
 end)
 
--- Tự động bật Tộc V3
+-- [ĐÃ TỐI ƯU RIÊNG CHO MOBILE]: Tự động bật Tộc V3 bằng cách spam đa tầng an toàn (Remote + Kích hoạt phím kỹ năng tương thích mọi executor điện thoại)
 task.spawn(function()
-    while task.wait(1.5) do
+    while task.wait(1.2) do
         if _G.Config.AutoV3 then
             pcall(function()
+                -- Cách 1: Gọi lệnh server chính thức của Blox Fruits
                 ReplicatedStorage.Remotes.CommF_:InvokeServer("ProccessAbillity")
+            end)
+            pcall(function()
+                -- Cách 2: Tương thích trực tiếp qua Remote Event điều khiển kỹ năng Tộc V3 trên Mobile
+                if ReplicatedStorage:FindFirstChild("Remotes") and ReplicatedStorage.Remotes:FindFirstChild("CommE") then
+                    ReplicatedStorage.Remotes.CommE:FireServer("ActivateAbility")
+                end
+            end)
+            pcall(function()
+                -- Cách 3: Giả lập phím bấm kỹ năng Tộc V3 (Phím T) hỗ trợ các executor điện thoại hỗ trợ VirtualInput
+                if game:GetService("VirtualInputManager") then
+                    game:GetService("VirtualInputManager"):SendKeyEvent(true, Enum.KeyCode.T, false, game)
+                    task.wait(0.05)
+                    game:GetService("VirtualInputManager"):SendKeyEvent(false, Enum.KeyCode.T, false, game)
+                end
             end)
         end
     end
 end)
 
--- Tự động bật Tộc V4 thông minh: Spam kiểm tra và kích hoạt với độ trễ vừa phải (tránh ban/chống spam quá nhanh) khi đầy thanh đỏ
+-- Tự động bật Tộc V4 (Chỉ bật khi đầy thanh đỏ, spam với tốc độ vừa phải tránh ban)
 task.spawn(function()
     while task.wait(0.8) do
         if _G.Config.AutoV4 then
@@ -208,7 +223,6 @@ task.spawn(function()
                 local mainGui = playerGui and playerGui:FindFirstChild("Main")
                 local transformBar = mainGui and mainGui:FindFirstChild("TransformBar") or (playerGui and playerGui:FindFirstChild("TransformBar"))
                 
-                -- Kiểm tra nếu thanh đỏ/năng lượng đầy hoặc tiến hành kích hoạt định kỳ an toàn
                 local canTransform = true
                 if transformBar then
                     local fillBar = transformBar:FindFirstChild("Bar") or transformBar:FindFirstChild("Fill")
@@ -222,9 +236,11 @@ task.spawn(function()
                         ReplicatedStorage.Remotes.CommF_:InvokeServer("ActivateRaceTransformation")
                     end)
                     pcall(function()
-                        game:GetService("VirtualInputManager"):SendKeyEvent(true, Enum.KeyCode.Y, false, game)
-                        task.wait(0.05)
-                        game:GetService("VirtualInputManager"):SendKeyEvent(false, Enum.KeyCode.Y, false, game)
+                        if game:GetService("VirtualInputManager") then
+                            game:GetService("VirtualInputManager"):SendKeyEvent(true, Enum.KeyCode.Y, false, game)
+                            task.wait(0.05)
+                            game:GetService("VirtualInputManager"):SendKeyEvent(false, Enum.KeyCode.Y, false, game)
+                        end
                     end)
                 end
             end)
@@ -391,7 +407,7 @@ _G.SenakaTabs.Automation:AddToggle("AutoBusoToggle", {
 })
 
 _G.SenakaTabs.Automation:AddToggle("AutoV3Toggle", {
-    Title = "Tự Động Bật Tộc V3",
+    Title = "Tự Động Bật Tộc V3 (Tối Ưu Mobile)",
     Default = _G.Config.AutoV3,
     Callback = function(Value)
         _G.Config.AutoV3 = Value
