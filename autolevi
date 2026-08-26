@@ -32,7 +32,6 @@ _G.Config = {
     IsMaster = false, 
     IsSlave = false, 
     MasterName = "bonbicuttay_999",
-    BypassTeleport = true, 
     WaterWalk = true,
     AutoBuso = true,
     AutoV3V4 = true,
@@ -44,9 +43,8 @@ _G.Config = {
 
 _G.SenakaLocations = {
     TikiBoat = CFrame.new(-16234, 9, 416),
-    TikiPortal = CFrame.new(-16180, 20, 425), -- Vị trí cổng dịch chuyển Tiki như ảnh
     Hydra = CFrame.new(5749, 610, -282),
-    LeviathanGate = CFrame.new(-16110, 15, 450)
+    SpyNpc = CFrame.new(-16110, 15, 450)
 }
 
 local success, Fluent = pcall(function()
@@ -126,89 +124,44 @@ end)
 _G.SenakaSendNotification = function(title, content, duration)
     pcall(function()
         Fluent:Notify({ Title = title, Content = content, Duration = duration or 3 })
+        local targetParent = gethui and gethui() or CoreGui
+        for _, gui in pairs(targetParent:GetChildren()) do
+            if gui:IsA("ScreenGui") then
+                for _, desc in pairs(gui:GetDescendants()) do
+                    if desc:IsA("TextLabel") and desc.Text == content then
+                        desc.TextColor3 = Color3.fromRGB(255, 255, 0)
+                    end
+                end
+            end
+        end
     end)
 end
 
--- Cơ chế Bypass mới: Reset nhân vật rồi dịch chuyển thẳng qua cổng Tiki
-_G.BypassResetTeleport = function(targetCFrame)
+_G.SenakaCharacterMove = function(targetCFrame, speed)
     local char = LocalPlayer.Character
     if not char then return end
     local root = char:FindFirstChild("HumanoidRootPart")
-    if not root then return end
+    local hum = char:FindFirstChild("Humanoid")
+    if not root or not hum then return end
 
-    if (root.Position - targetCFrame.Position).Magnitude > 500 then
-        pcall(function()
-            if char:FindFirstChild("Humanoid") then
-                char.Humanoid.Health = 0 -- Reset nhân vật
-            end
-        end)
-        
-        -- Chờ nhân vật hồi sinh xong
-        LocalPlayer.CharacterAdded:Wait()
-        task.wait(0.5)
-        
-        local newChar = LocalPlayer.Character
-        local newRoot = newChar and newChar:WaitForChild("HumanoidRootPart", 5)
-        if newRoot then
-            newRoot.CFrame = _G.SenakaLocations.TikiPortal
-            task.wait(0.2)
-        end
-    end
-
-    local currentChars = LocalPlayer.Character
-    if not currentChars then return end
-    local currentRoot = currentChars:FindFirstChild("HumanoidRootPart")
-    local currentHum = currentChars:FindFirstChild("Humanoid")
-    if not currentRoot or not currentHum then return end
-
+    speed = speed or _G.Config.TweenSpeed
     local noclipConn = RunService.Stepped:Connect(function()
-        if currentChars and currentChars.Parent then
-            for _, part in pairs(currentChars:GetChildren()) do
+        if char and char.Parent then
+            for _, part in pairs(char:GetChildren()) do
                 if part:IsA("BasePart") then part.CanCollide = false end
             end
         end
     end)
 
-    currentHum.PlatformStand = true
-    local distance = (currentRoot.Position - targetCFrame.Position).Magnitude
-    local duration = distance / _G.Config.TweenSpeed
-    local tween = TweenService:Create(currentRoot, TweenInfo.new(duration, Enum.EasingStyle.Linear), {CFrame = targetCFrame})
+    hum.PlatformStand = true
+    local distance = (root.Position - targetCFrame.Position).Magnitude
+    local duration = distance / speed
+    local tween = TweenService:Create(root, TweenInfo.new(duration, Enum.EasingStyle.Linear), {CFrame = targetCFrame})
 
     tween:Play()
     tween.Completed:Wait()
     if noclipConn then noclipConn:Disconnect() end
-    currentHum.PlatformStand = false
-end
-
-_G.SenakaCharacterMove = function(targetCFrame, speed)
-    if _G.Config.BypassTeleport then
-        _G.BypassResetTeleport(targetCFrame)
-    else
-        local char = LocalPlayer.Character
-        if not char then return end
-        local root = char:FindFirstChild("HumanoidRootPart")
-        local hum = char:FindFirstChild("Humanoid")
-        if not root or not hum then return end
-
-        speed = speed or _G.Config.TweenSpeed
-        local noclipConn = RunService.Stepped:Connect(function()
-            if char and char.Parent then
-                for _, part in pairs(char:GetChildren()) do
-                    if part:IsA("BasePart") then part.CanCollide = false end
-                end
-            end
-        end)
-
-        hum.PlatformStand = true
-        local distance = (root.Position - targetCFrame.Position).Magnitude
-        local duration = distance / speed
-        local tween = TweenService:Create(root, TweenInfo.new(duration, Enum.EasingStyle.Linear), {CFrame = targetCFrame})
-
-        tween:Play()
-        tween.Completed:Wait()
-        if noclipConn then noclipConn:Disconnect() end
-        hum.PlatformStand = false
-    end
+    hum.PlatformStand = false
 end
 
 local function SmartBuyBoat()
@@ -252,20 +205,20 @@ RunService.Stepped:Connect(function()
     end
 end)
 
--- Sửa lại logic Bật Tộc V3/V4 hoạt động ổn định hơn
 task.spawn(function()
-    while task.wait(1) do
+    while task.wait(0.5) do
         if _G.Config.AutoV3V4 then
             pcall(function()
                 ReplicatedStorage.Remotes.CommF_:InvokeServer("ActivateAbility")
                 
-                VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Y, false, game)
-                task.wait(0.05)
-                VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Y, false, game)
+                local vim = VirtualInputManager
+                vim:SendKeyEvent(true, Enum.KeyCode.Y, false, game)
+                task.wait(0.02)
+                vim:SendKeyEvent(false, Enum.KeyCode.Y, false, game)
                 
-                VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.T, false, game)
-                task.wait(0.05)
-                VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.T, false, game)
+                vim:SendKeyEvent(true, Enum.KeyCode.T, false, game)
+                task.wait(0.02)
+                vim:SendKeyEvent(false, Enum.KeyCode.T, false, game)
             end)
         end
     end
@@ -318,12 +271,17 @@ task.spawn(function()
                 local Heart = workspace:FindFirstChild("LeviathanHeart")
                 
                 if IceIsland then
-                    local MyBoat = workspace:FindFirstChild(LocalPlayer.Name .. "_Boat")
-                    if not MyBoat then
-                        if (Root.Position - _G.SenakaLocations.TikiBoat.Position).Magnitude > 50 then
-                            _G.SenakaCharacterMove(_G.SenakaLocations.TikiBoat, _G.Config.TweenSpeed)
+                    local islandPart = IceIsland:FindFirstChild("PrimaryPart") or IceIsland:FindFirstChildWhichIsA("BasePart")
+                    if islandPart then
+                        if (Root.Position - islandPart.Position).Magnitude > 150 then
+                            _G.SenakaCharacterMove(islandPart.CFrame * CFrame.new(0, 20, 0), _G.Config.TweenSpeed)
+                        else
+                            _G.SenakaCharacterMove(_G.SenakaLocations.SpyNpc, _G.Config.TweenSpeed)
+                            task.wait(0.5)
+                            pcall(function()
+                                ReplicatedStorage.Remotes.CommF_:InvokeServer("FindLeviathan")
+                            end)
                         end
-                        if _G.Config.AutoBuyBoat then SmartBuyBoat() end
                     end
 
                     if Heart then
@@ -332,8 +290,12 @@ task.spawn(function()
                         end)
                     end
                 else
-                    if (Root.Position - _G.SenakaLocations.TikiBoat.Position).Magnitude > 100 then
-                        _G.SenakaCharacterMove(_G.SenakaLocations.TikiBoat, _G.Config.TweenSpeed)
+                    local MyBoat = workspace:FindFirstChild(LocalPlayer.Name .. "_Boat")
+                    if not MyBoat then
+                        if (Root.Position - _G.SenakaLocations.TikiBoat.Position).Magnitude > 50 then
+                            _G.SenakaCharacterMove(_G.SenakaLocations.TikiBoat, _G.Config.TweenSpeed)
+                        end
+                        if _G.Config.AutoBuyBoat then SmartBuyBoat() end
                     end
                 end
             end
@@ -405,14 +367,6 @@ _G.SenakaTabs.Automation:AddToggle("SlaveToggle", {
     end
 })
 
-_G.SenakaTabs.Automation:AddToggle("BypassTeleportToggle", {
-    Title = "Bypass Teleport (Reset + Cổng Tiki)",
-    Default = _G.Config.BypassTeleport,
-    Callback = function(Value)
-        _G.Config.BypassTeleport = Value
-    end
-})
-
 _G.SenakaTabs.Automation:AddToggle("WaterWalkToggle", {
     Title = "Đứng Trên Nước (Water Walk)",
     Default = _G.Config.WaterWalk,
@@ -467,11 +421,4 @@ _G.SenakaTabs.Travel:AddButton({
     end
 })
 
-_G.SenakaTabs.Travel:AddButton({
-    Title = "Đến Cổng Leviathan",
-    Callback = function()
-        _G.SenakaCharacterMove(_G.SenakaLocations.LeviathanGate, _G.Config.TweenSpeed)
-    end
-})
-
-_G.SenakaSendNotification("SENAKA HUB", "Đã cập nhật Bypass Reset & V3/V4!", 3)
+_G.SenakaSendNotification("SENAKA HUB", "Đã cập nhật thành công!", 3)
