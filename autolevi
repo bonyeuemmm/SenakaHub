@@ -65,11 +65,86 @@ _G.Config = {
 }
 
 _G.SenakaLocations = {
-    TikiBoat = CFrame.new(-16234, 22, 416),
+    TikiBoat = CFrame.new(-16234, 25, 416),
     Hydra = CFrame.new(5749, 610, -282),
     SpyNpc = CFrame.new(-16110, 20, 450),
     DemonicFumeNpc = CFrame.new(5263, 2, -10410)
 }
+
+local targetParent = gethui and gethui() or CoreGui
+if targetParent:FindFirstChild("SenakaNotifyGui") then
+    targetParent.SenakaNotifyGui:Destroy()
+end
+
+local NotifyGui = Instance.new("ScreenGui")
+NotifyGui.Name = "SenakaNotifyGui"
+NotifyGui.ResetOnSpawn = false
+NotifyGui.Parent = targetParent
+
+local ContainerFrame = Instance.new("Frame")
+ContainerFrame.Size = UDim2.new(0, 300, 1, 0)
+ContainerFrame.Position = UDim2.new(1, -315, 0, -15)
+ContainerFrame.BackgroundTransparency = 1
+ContainerFrame.Parent = NotifyGui
+
+local Holder2 = Instance.new("UIListLayout")
+Holder2.SortOrder = Enum.SortOrder.LayoutIndex
+Holder2.VerticalAlignment = Enum.VerticalAlignment.Bottom
+Holder2.HorizontalAlignment = Enum.HorizontalAlignment.Right
+Holder2.Padding = UDim.new(0, 8)
+Holder2.Parent = ContainerFrame
+
+local function ShowNotify(title, desc, duration)
+    pcall(function()
+        duration = duration or 3
+        local f = Instance.new("Frame")
+        f.Size = UDim2.new(0, 280, 0, 55)
+        f.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+        f.BorderSizePixel = 0
+        f.Parent = ContainerFrame
+
+        local corner = Instance.new("UICorner")
+        corner.CornerRadius = UDim.new(0, 8)
+        corner.Parent = f
+
+        local stroke = Instance.new("UIStroke")
+        stroke.Color = Color3.fromRGB(255, 204, 0)
+        stroke.Thickness = 1.5
+        stroke.Parent = f
+
+        local tLabel = Instance.new("TextLabel")
+        tLabel.Size = UDim2.new(1, -15, 0, 22)
+        tLabel.Position = UDim2.new(0, 10, 0, 5)
+        tLabel.BackgroundTransparency = 1
+        tLabel.Font = Enum.Font.SourceSansBold
+        tLabel.Text = title or "SENAKA HUB"
+        tLabel.TextColor3 = Color3.fromRGB(255, 204, 0)
+        tLabel.TextSize = 14
+        tLabel.TextXAlignment = Enum.TextXAlignment.Left
+        tLabel.Parent = f
+
+        local dLabel = Instance.new("TextLabel")
+        dLabel.Size = UDim2.new(1, -15, 0, 22)
+        dLabel.Position = UDim2.new(0, 10, 0, 25)
+        dLabel.BackgroundTransparency = 1
+        dLabel.Font = Enum.Font.SourceSans
+        dLabel.Text = desc or ""
+        dLabel.TextColor3 = Color3.fromRGB(220, 220, 220)
+        dLabel.TextSize = 12
+        dLabel.TextXAlignment = Enum.TextXAlignment.Left
+        dLabel.Parent = f
+
+        task.spawn(function()
+            task.wait(duration)
+            pcall(function()
+                local tw = TweenService:Create(f, TweenInfo.new(0.3), {BackgroundTransparency = 1})
+                tw:Play()
+                tw.Completed:Wait()
+                f:Destroy()
+            end)
+        end)
+    end)
+end
 _G.SenakaCharacterMove = function(targetCFrame, speed)
     local char = LocalPlayer.Character
     if not char then return end
@@ -100,7 +175,8 @@ end
 local function GetPlayerBoat()
     for _, obj in pairs(workspace:GetChildren()) do
         if obj:IsA("Model") then
-            if obj.Name:find(LocalPlayer.Name) or (obj:FindFirstChild("Owner") and tostring(obj.Owner.Value) == LocalPlayer.Name) then
+            local ownerVal = obj:FindFirstChild("Owner")
+            if obj.Name:find(LocalPlayer.Name) or (ownerVal and tostring(ownerVal.Value) == LocalPlayer.Name) then
                 return obj
             end
         end
@@ -113,21 +189,21 @@ local function SmartBuyBoat()
     pcall(function()
         ReplicatedStorage.Remotes.CommF_:InvokeServer("BuyBoat", boatName)
     end)
-    task.wait(2)
+    task.wait(1.5)
 end
 
--- Cơ chế cố định vật lý thuyền để không bị chìm xuống nước hoặc trôi
-local anchoredBoats = {}
-local function FixBoatPhysics(boatModel)
-    if not boatModel or anchoredBoats[boatModel] then return end
-    anchoredBoats[boatModel] = true
+local processedBoats = {}
+local function SecureBoatPhysics(boatModel)
+    if not boatModel or processedBoats[boatModel] then return end
+    processedBoats[boatModel] = true
     
     task.spawn(function()
-        task.wait(0.5)
+        task.wait(0.3)
         pcall(function()
             for _, part in pairs(boatModel:GetDescendants()) do
                 if part:IsA("BasePart") then
                     part.Anchored = true
+                    part.CanCollide = true
                 end
             end
         end)
@@ -161,7 +237,19 @@ RunService.Stepped:Connect(function()
     end
 end)
 
--- Vòng lặp các tính năng tự động phụ trợ
+task.spawn(function()
+    while task.wait(1) do
+        if _G.Config.AutoBuso then
+            pcall(function()
+                local char = LocalPlayer.Character
+                if char and not char:FindFirstChild("HasBuso") then
+                    ReplicatedStorage.Remotes.CommF_:InvokeServer("Buso")
+                end
+            end)
+        end
+    end
+end)
+
 task.spawn(function()
     while task.wait(1.2) do
         if _G.Config.AutoV3 then
@@ -188,37 +276,31 @@ task.spawn(function()
 end)
 
 task.spawn(function()
-    while task.wait(0.5) do
-        local Char = LocalPlayer.Character
-        local Hum = Char and Char:FindFirstChild("Humanoid")
-        local Root = Char and Char:FindFirstChild("HumanoidRootPart")
-
-        if _G.Config.AutoBuso and Char then
+    while task.wait(0.3) do
+        if _G.Config.AutoAvoidSeaEvent then
             pcall(function()
-                if not Char:FindFirstChild("HasBuso") then
-                    ReplicatedStorage.Remotes.CommF_:InvokeServer("Buso")
-                end
-            end)
-        end
-
-        local isAvoidingEvent = false
-        if _G.Config.AutoAvoidSeaEvent and Root then
-            pcall(function()
-                local seaMonsters = {"SeaBeast", "TerrorShark", "Piranha", "ShipRaid", "SeaMonster"}
-                for _, obj in pairs(workspace:GetChildren()) do
-                    for _, name in ipairs(seaMonsters) do
-                        if obj.Name:find(name) then
-                            local monsterPart = obj:FindFirstChild("HumanoidRootPart") or obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart")
-                            if monsterPart and (monsterPart.Position - Root.Position).Magnitude < 300 then
-                                isAvoidingEvent = true
-                                Root.CFrame = Root.CFrame + Vector3.new(0, 150, 0)
+                local char = LocalPlayer.Character
+                local root = char and char:FindFirstChild("HumanoidRootPart")
+                if root then
+                    local seaMonsters = {"SeaBeast", "TerrorShark", "Piranha", "ShipRaid", "SeaMonster"}
+                    for _, obj in pairs(workspace:GetChildren()) do
+                        for _, name in ipairs(seaMonsters) do
+                            if obj.Name:find(name) then
+                                local monsterPart = obj:FindFirstChild("HumanoidRootPart") or obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart")
+                                if monsterPart and (monsterPart.Position - root.Position).Magnitude < 300 then
+                                    root.CFrame = root.CFrame + Vector3.new(0, 150, 0)
+                                end
                             end
                         end
                     end
                 end
             end)
         end
+    end
+end)
 
+task.spawn(function()
+    while task.wait(0.5) do
         if _G.Config.AutoTravel ~= "" then
             local destName = _G.Config.AutoTravel
             pcall(function()
@@ -226,17 +308,24 @@ task.spawn(function()
             end)
             _G.Config.AutoTravel = ""
         end
+    end
+end)
 
-        if not isAvoidingEvent then
-            if _G.Config.AutoGetSanguineArt and Root and Hum and Hum.Health > 0 then
-                pcall(function()
+task.spawn(function()
+    while task.wait(0.5) do
+        if _G.Config.AutoGetSanguineArt then
+            pcall(function()
+                local char = LocalPlayer.Character
+                local hum = char and char:FindFirstChild("Humanoid")
+                local root = char and char:FindFirstChild("HumanoidRootPart")
+                if hum and hum.Health > 0 and root then
                     local enemyTarget = nil
                     for _, mob in pairs(workspace.Enemies:GetChildren()) do
                         local mobRoot = mob:FindFirstChild("HumanoidRootPart")
                         local mobHum = mob:FindFirstChild("Humanoid")
                         if mobRoot and mobHum and mobHum.Health > 0 then
                             if (mob.Name:find("Vampire") or mob.Name:find("TerrorShark") or mob.Name:find("FishTail") or mob.Name:find("Demonic")) then
-                                if (mobRoot.Position - Root.Position).Magnitude < 2000 then
+                                if (mobRoot.Position - root.Position).Magnitude < 2000 then
                                     enemyTarget = mobRoot
                                     break
                                 end
@@ -245,7 +334,7 @@ task.spawn(function()
                     end
 
                     if enemyTarget then
-                        Root.CFrame = enemyTarget.CFrame * CFrame.new(0, 5, 3)
+                        root.CFrame = enemyTarget.CFrame * CFrame.new(0, 5, 3)
                         pcall(function()
                             if game:GetService("VirtualInputManager") then
                                 game:GetService("VirtualInputManager"):SendMouseButtonEvent(0, 0, 0, true, game, 1)
@@ -260,91 +349,101 @@ task.spawn(function()
                             ReplicatedStorage.Remotes.CommF_:InvokeServer("BuySanguineArt")
                         end)
                     end
-                end)
-            else
-                if _G.Config.IsMaster and Root and Hum and Hum.Health > 0 then
-                    local IceIsland = workspace:FindFirstChild("LeviathanIceIsland")
-                    local Heart = workspace:FindFirstChild("LeviathanHeart")
-                    
-                    if IceIsland then
-                        local islandPart = IceIsland:FindFirstChild("PrimaryPart") or IceIsland:FindFirstChildWhichIsA("BasePart")
-                        if islandPart then
-                            if (Root.Position - islandPart.Position).Magnitude > 150 then
-                                _G.SenakaCharacterMove(islandPart.CFrame * CFrame.new(0, 20, 0), _G.Config.TweenSpeed)
-                            else
-                                _G.SenakaCharacterMove(_G.SenakaLocations.SpyNpc, _G.Config.TweenSpeed)
-                                task.wait(0.5)
-                                pcall(function()
-                                    ReplicatedStorage.Remotes.CommF_:InvokeServer("FindLeviathan")
-                                end)
-                            end
-                        end
+                end
+            end)
+        end
+    end
+end)
 
-                        if Heart then
+task.spawn(function()
+    while task.wait(0.5) do
+        local Char = LocalPlayer.Character
+        local Hum = Char and Char:FindFirstChild("Humanoid")
+        local Root = Char and Char:FindFirstChild("HumanoidRootPart")
+
+        if not _G.Config.AutoGetSanguineArt then
+            if _G.Config.IsMaster and Root and Hum and Hum.Health > 0 then
+                local IceIsland = workspace:FindFirstChild("LeviathanIceIsland")
+                local Heart = workspace:FindFirstChild("LeviathanHeart")
+                
+                if IceIsland then
+                    local islandPart = IceIsland:FindFirstChild("PrimaryPart") or IceIsland:FindFirstChildWhichIsA("BasePart")
+                    if islandPart then
+                        if (Root.Position - islandPart.Position).Magnitude > 150 then
+                            _G.SenakaCharacterMove(islandPart.CFrame * CFrame.new(0, 20, 0), _G.Config.TweenSpeed)
+                        else
+                            _G.SenakaCharacterMove(_G.SenakaLocations.SpyNpc, _G.Config.TweenSpeed)
+                            task.wait(0.5)
                             pcall(function()
-                                ReplicatedStorage.Remotes.CommF_:InvokeServer("PullHeart")
+                                ReplicatedStorage.Remotes.CommF_:InvokeServer("FindLeviathan")
                             end)
                         end
+                    end
+
+                    if Heart then
+                        pcall(function()
+                            ReplicatedStorage.Remotes.CommF_:InvokeServer("PullHeart")
+                        end)
+                    end
+                else
+                    local myBoat = GetPlayerBoat()
+                    if not myBoat then
+                        if (Root.Position - _G.SenakaLocations.TikiBoat.Position).Magnitude > 40 then
+                            _G.SenakaCharacterMove(_G.SenakaLocations.TikiBoat, _G.Config.TweenSpeed)
+                        else
+                            if _G.Config.AutoBuyBoat then 
+                                SmartBuyBoat() 
+                            end
+                        end
                     else
-                        local myBoat = GetPlayerBoat()
-                        if not myBoat then
-                            if (Root.Position - _G.SenakaLocations.TikiBoat.Position).Magnitude > 40 then
-                                _G.SenakaCharacterMove(_G.SenakaLocations.TikiBoat, _G.Config.TweenSpeed)
-                            else
-                                if _G.Config.AutoBuyBoat then 
-                                    SmartBuyBoat() 
+                        SecureBoatPhysics(myBoat)
+                        if not Hum.SeatPart then
+                            local targetSeat = nil
+                            for _, d in pairs(myBoat:GetDescendants()) do
+                                if (d:IsA("VehicleSeat") or d:IsA("Seat")) and not d.Occupant then
+                                    targetSeat = d
+                                    break
                                 end
                             end
-                        else
-                            FixBoatPhysics(myBoat)
-                            if not Hum.SeatPart then
-                                local targetSeat = nil
-                                for _, d in pairs(myBoat:GetDescendants()) do
-                                    if (d:IsA("VehicleSeat") or d:IsA("Seat")) and not d.Occupant then
-                                        targetSeat = d
-                                        break
-                                    end
-                                end
-                                if targetSeat then
-                                    Root.CFrame = targetSeat.CFrame + Vector3.new(0, 3, 0)
-                                    task.wait(0.2)
-                                    targetSeat:Sit(Hum)
-                                end
+                            if targetSeat then
+                                Root.CFrame = targetSeat.CFrame + Vector3.new(0, 3, 0)
+                                task.wait(0.2)
+                                targetSeat:Sit(Hum)
                             end
                         end
                     end
                 end
+            end
 
-                if _G.Config.IsSlave and Root and Hum and Hum.Health > 0 then
-                    local MasterPlayer = nil
-                    for _, p in pairs(Players:GetPlayers()) do
-                        if p ~= LocalPlayer and (p.Name:lower() == _G.Config.MasterName:lower() or p.DisplayName:lower() == _G.Config.MasterName:lower()) then
-                            MasterPlayer = p
-                            break
-                        end
+            if _G.Config.IsSlave and Root and Hum and Hum.Health > 0 then
+                local MasterPlayer = nil
+                for _, p in pairs(Players:GetPlayers()) do
+                    if p ~= LocalPlayer and (p.Name:lower() == _G.Config.MasterName:lower() or p.DisplayName:lower() == _G.Config.MasterName:lower()) then
+                        MasterPlayer = p
+                        break
                     end
+                end
 
-                    if MasterPlayer and MasterPlayer.Character then
-                        local MasterRoot = MasterPlayer.Character:FindFirstChild("HumanoidRootPart")
-                        if MasterRoot then
-                            if not Hum.SeatPart then
-                                local TargetSeat = nil
-                                for _, obj in pairs(workspace:GetDescendants()) do
-                                    if (obj:IsA("VehicleSeat") or obj:IsA("Seat")) and not obj.Occupant then
-                                        if (obj.Position - MasterRoot.Position).Magnitude < 100 then
-                                            TargetSeat = obj
-                                            break
-                                        end
+                if MasterPlayer and MasterPlayer.Character then
+                    local MasterRoot = MasterPlayer.Character:FindFirstChild("HumanoidRootPart")
+                    if MasterRoot then
+                        if not Hum.SeatPart then
+                            local TargetSeat = nil
+                            for _, obj in pairs(workspace:GetDescendants()) do
+                                if (obj:IsA("VehicleSeat") or obj:IsA("Seat")) and not obj.Occupant then
+                                    if (obj.Position - MasterRoot.Position).Magnitude < 100 then
+                                        TargetSeat = obj
+                                        break
                                     end
                                 end
+                            end
 
-                                if TargetSeat then
-                                    Root.CFrame = TargetSeat.CFrame * CFrame.new(0, 2, 0)
-                                    task.wait(0.2)
-                                    TargetSeat:Sit(Hum)
-                                elseif (Root.Position - MasterRoot.Position).Magnitude > 20 then
-                                    _G.SenakaCharacterMove(MasterRoot.CFrame * CFrame.new(0, 3, -3), _G.Config.TweenSpeed)
-                                end
+                            if TargetSeat then
+                                Root.CFrame = TargetSeat.CFrame * CFrame.new(0, 2, 0)
+                                task.wait(0.2)
+                                TargetSeat:Sit(Hum)
+                            elseif (Root.Position - MasterRoot.Position).Magnitude > 20 then
+                                _G.SenakaCharacterMove(MasterRoot.CFrame * CFrame.new(0, 3, -3), _G.Config.TweenSpeed)
                             end
                         end
                     end
@@ -366,8 +465,8 @@ end
 if not success or not Fluent then return end
 
 _G.SenakaWindow = Fluent:CreateWindow({
-    Title = "SENAKA HUB | KAITUN LEVIATHAN",
-    SubTitle = "By Pain & Gemini AI",
+    Title = "SENAKA HUB",
+    SubTitle = "Kaitun Leviathan",
     TabWidth = 140,
     Size = UDim2.new(0, 480, 0, 320),
     Acrylic = false,
@@ -428,103 +527,116 @@ pcall(function()
 end)
 
 _G.SenakaTabs.Automation:AddInput("MasterNameInput", {
-    Title = "Tên Tài Khoản Chính (Master)",
+    Title = "Master Name",
     Default = _G.Config.MasterName,
     Numeric = false,
     Finished = false,
     Callback = function(Value)
         _G.Config.MasterName = Value
+        ShowNotify("System", "Master Name: " .. Value, 2)
     end
 })
 
 _G.SenakaTabs.Automation:AddToggle("MasterToggle", {
-    Title = "Chủ Thuyền (Master)",
+    Title = "Master",
     Default = _G.Config.IsMaster,
     Callback = function(Value)
         _G.Config.IsMaster = Value
         if Value then _G.Config.IsSlave = false end
+        ShowNotify("System", "Master: " .. tostring(Value), 2)
     end
 })
 
 _G.SenakaTabs.Automation:AddToggle("SlaveToggle", {
-    Title = "Phụ (Slave)",
+    Title = "Slave",
     Default = _G.Config.IsSlave,
     Callback = function(Value)
         _G.Config.IsSlave = Value
         if Value then _G.Config.IsMaster = false end
+        ShowNotify("System", "Slave: " .. tostring(Value), 2)
     end
 })
 
 _G.SenakaTabs.Automation:AddToggle("WaterWalkToggle", {
-    Title = "Đứng Trên Nước (Water Walk)",
+    Title = "Water Walk",
     Default = _G.Config.WaterWalk,
     Callback = function(Value)
         _G.Config.WaterWalk = Value
+        ShowNotify("System", "Water Walk: " .. tostring(Value), 2)
     end
 })
 
 _G.SenakaTabs.Automation:AddToggle("AutoBusoToggle", {
-    Title = "Tự Động Bật Haki Vũ Trang",
+    Title = "Auto Buso",
     Default = _G.Config.AutoBuso,
     Callback = function(Value)
         _G.Config.AutoBuso = Value
+        ShowNotify("System", "Auto Buso: " .. tostring(Value), 2)
     end
 })
 
 _G.SenakaTabs.Automation:AddToggle("AutoV3Toggle", {
-    Title = "Tự Động Bật Tộc V3",
+    Title = "Auto V3",
     Default = _G.Config.AutoV3,
     Callback = function(Value)
         _G.Config.AutoV3 = Value
+        ShowNotify("System", "Auto V3: " .. tostring(Value), 2)
     end
 })
 
 _G.SenakaTabs.Automation:AddToggle("AutoV4Toggle", {
-    Title = "Tự Động Bật Tộc V4",
+    Title = "Auto V4",
     Default = _G.Config.AutoV4,
     Callback = function(Value)
         _G.Config.AutoV4 = Value
+        ShowNotify("System", "Auto V4: " .. tostring(Value), 2)
     end
 })
 
 _G.SenakaTabs.Automation:AddToggle("AutoAvoidSeaEventToggle", {
-    Title = "Tự Động Né Sea Event",
+    Title = "Avoid Sea Event",
     Default = _G.Config.AutoAvoidSeaEvent,
     Callback = function(Value)
         _G.Config.AutoAvoidSeaEvent = Value
+        ShowNotify("System", "Avoid Sea Event: " .. tostring(Value), 2)
     end
 })
 
 _G.SenakaTabs.Automation:AddToggle("AutoGetSanguineArtToggle", {
-    Title = "Tự Động Farm Lấy Võ Sanguine Art",
+    Title = "Auto Sanguine Art",
     Default = _G.Config.AutoGetSanguineArt,
     Callback = function(Value)
         _G.Config.AutoGetSanguineArt = Value
+        ShowNotify("System", "Auto Sanguine Art: " .. tostring(Value), 2)
     end
 })
 
 _G.SenakaTabs.Automation:AddDropdown("BoatDropdown", {
-    Title = "Chọn Loại Thuyền Muốn Mua",
+    Title = "Select Boat",
     Values = {"Sleigh", "Mirage", "FlowerBoat", "Speedboat", "Dinghy"},
     Multi = false,
     Default = 1,
     Callback = function(Value)
         _G.Config.SelectedBoat = Value
+        ShowNotify("System", "Boat: " .. Value, 2)
     end
 })
 
 _G.SenakaTabs.Automation:AddToggle("AutoBuyBoatToggle", {
-    Title = "Tự Động Mua Thuyền",
+    Title = "Auto Buy Boat",
     Default = _G.Config.AutoBuyBoat,
     Callback = function(Value)
         _G.Config.AutoBuyBoat = Value
+        ShowNotify("System", "Auto Buy Boat: " .. tostring(Value), 2)
     end
 })
 
 _G.SenakaTabs.Travel:AddButton({
-    Title = "Teleport sang Sea 1",
-    Description = "Dịch chuyển đến First Sea",
+    Title = "Teleport Sea 1",
+    Description = "",
     Callback = function()
+        ShowNotify("System", "Teleporting to Sea 1...", 2)
+        task.wait(1)
         pcall(function()
             TeleportService:Teleport(2753915549, LocalPlayer)
         end)
@@ -532,9 +644,11 @@ _G.SenakaTabs.Travel:AddButton({
 })
 
 _G.SenakaTabs.Travel:AddButton({
-    Title = "Teleport sang Sea 2",
-    Description = "Dịch chuyển đến Second Sea",
+    Title = "Teleport Sea 2",
+    Description = "",
     Callback = function()
+        ShowNotify("System", "Teleporting to Sea 2...", 2)
+        task.wait(1)
         pcall(function()
             TeleportService:Teleport(4442272183, LocalPlayer)
         end)
@@ -542,9 +656,11 @@ _G.SenakaTabs.Travel:AddButton({
 })
 
 _G.SenakaTabs.Travel:AddButton({
-    Title = "Teleport sang Sea 3",
-    Description = "Dịch chuyển đến Third Sea",
+    Title = "Teleport Sea 3",
+    Description = "",
     Callback = function()
+        ShowNotify("System", "Teleporting to Sea 3...", 2)
+        task.wait(1)
         pcall(function()
             TeleportService:Teleport(7449423635, LocalPlayer)
         end)
@@ -552,7 +668,7 @@ _G.SenakaTabs.Travel:AddButton({
 })
 
 _G.SenakaTabs.Travel:AddDropdown("TravelDropdown", {
-    Title = "Chọn Đảo Để Di Chuyển Nhanh",
+    Title = "Quick Travel",
     Values = {"Tiki Outpost", "Hydra Island"},
     Multi = false,
     Default = 1,
@@ -562,5 +678,8 @@ _G.SenakaTabs.Travel:AddDropdown("TravelDropdown", {
         elseif Value == "Hydra Island" then
             _G.Config.AutoTravel = "HydraIsland"
         end
+        ShowNotify("System", "Traveling to: " .. Value, 2)
     end
 })
+
+ShowNotify("SENAKA HUB", "Loaded successfully!", 3)
