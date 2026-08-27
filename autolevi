@@ -119,10 +119,13 @@ local function FindAndInteractBoatDealer()
     
     local dealerPart = nil
     for _, obj in pairs(workspace:GetDescendants()) do
-        if obj:IsA("Model") and (obj.Name:lower() == "boat dealer" or obj.Name:lower():find("boatdealer")) then
-            if obj:FindFirstChild("HumanoidRootPart") then
-                dealerPart = obj.HumanoidRootPart
-                break
+        if obj:IsA("Model") then
+            local nameLower = obj.Name:lower()
+            if nameLower:find("boat dealer") or nameLower:find("boatdealer") or nameLower:find("dealer") then
+                if obj:FindFirstChild("HumanoidRootPart") then
+                    dealerPart = obj.HumanoidRootPart
+                    break
+                end
             end
         end
     end
@@ -130,7 +133,8 @@ local function FindAndInteractBoatDealer()
     if not dealerPart then
         for _, obj in pairs(workspace:GetChildren()) do
             if obj:IsA("Model") and obj:FindFirstChild("HumanoidRootPart") and obj:FindFirstChild("Humanoid") then
-                if (obj.HumanoidRootPart.Position - _G.SenakaLocations.TikiBoat.Position).Magnitude < 50 then
+                local dist = (obj.HumanoidRootPart.Position - _G.SenakaLocations.TikiBoat.Position).Magnitude
+                if dist < 300 then
                     dealerPart = obj.HumanoidRootPart
                     break
                 end
@@ -661,7 +665,7 @@ local function CreatePage(name)
     scroller.Active = true
     scroller.BackgroundTransparency = 1
     scroller.Size = UDim2.new(1, 0, 1, 0)
-    scroller.CanvasSize = UDim2.new(0, 0, 0, 700)
+    scroller.CanvasSize = UDim2.new(0, 0, 0, 750)
     scroller.ScrollBarThickness = 4
     scroller.Visible = false
 
@@ -802,6 +806,45 @@ masterTextBox.FocusLost:Connect(function(enterPressed)
     if enterPressed then
         if _G.Config then _G.Config.MasterName = masterTextBox.Text end
         ShowNotification("Đã cập nhật tên Master: " .. masterTextBox.Text)
+    end
+end)
+
+local boatInputFrame = Instance.new("Frame")
+boatInputFrame.Parent = pageMain
+boatInputFrame.BackgroundColor3 = Color3.fromRGB(28, 28, 28)
+boatInputFrame.Size = UDim2.new(1, -10, 0, 50)
+local boatCorner = Instance.new("UICorner")
+boatCorner.CornerRadius = UDim.new(0, 6)
+boatCorner.Parent = boatInputFrame
+
+local boatLabel = Instance.new("TextLabel")
+boatLabel.Parent = boatInputFrame
+boatLabel.BackgroundTransparency = 1
+boatLabel.Position = UDim2.new(0, 10, 0, 2)
+boatLabel.Size = UDim2.new(1, -20, 0, 20)
+boatLabel.Font = Enum.Font.SourceSansBold
+boatLabel.Text = "Chọn Thuyền Muốn Mua (Tên Thuyền):"
+boatLabel.TextColor3 = Color3.fromRGB(240, 240, 240)
+boatLabel.TextSize = 12
+boatLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+local boatTextBox = Instance.new("TextBox")
+boatTextBox.Parent = boatInputFrame
+boatTextBox.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+boatTextBox.Position = UDim2.new(0, 10, 0, 24)
+boatTextBox.Size = UDim2.new(1, -20, 0, 22)
+boatTextBox.Font = Enum.Font.SourceSans
+boatTextBox.Text = (_G.Config and _G.Config.SelectedBoat) or "Dinghy"
+boatTextBox.TextColor3 = Color3.fromRGB(255, 200, 0)
+boatTextBox.TextSize = 11
+local boatBoxC = Instance.new("UICorner")
+boatBoxC.CornerRadius = UDim.new(0, 4)
+boatBoxC.Parent = boatTextBox
+
+boatTextBox.FocusLost:Connect(function(enterPressed)
+    if enterPressed then
+        if _G.Config then _G.Config.SelectedBoat = boatTextBox.Text end
+        ShowNotification("Đã chọn thuyền: " .. boatTextBox.Text)
     end
 end)
 
