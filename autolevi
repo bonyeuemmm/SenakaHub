@@ -448,87 +448,78 @@ task.spawn(function()
                     local MasterRoot = MasterPlayer.Character:FindFirstChild("HumanoidRootPart")
                     if MasterRoot and not Hum.SeatPart then
                         local TargetSeat = nil
-  local success, Fluent = pcall(function()
-    return loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
-end)
+  local OrionLib = loadstring(game:HttpGet(('https://raw.githubusercontent.com/shlexware/Orion/main/source')))()
 
-if not success or not Fluent then
-    Fluent = loadstring(game:HttpGet("https://raw.githubusercontent.com/deeeage/Roblox-UI-Libraries/main/Fluent/Fluent.lua"))()
-end
-
-local Window = Fluent:CreateWindow({
-    Title = "Senaka Hub - Leviathan",
-    SubTitle = "Mobile Edition",
-    TabWidth = 140,
-    Size = UDim2.fromOffset(480, 400),
-    Acrylic = false,
-    Theme = "Dark",
-    MinimizeKey = Enum.KeyCode.RightControl
+local Window = OrionLib:MakeWindow({
+    Name = "Senaka Hub - Leviathan",
+    HidePremium = false,
+    SaveConfig = true,
+    ConfigFolder = "SenakaConfig"
 })
 
-local Tabs = {
-    Main = Window:AddTab({ Title = "Main", Icon = "home" }),
-    Teleport = Window:AddTab({ Title = "Teleport", Icon = "map" }),
-    Settings = Window:AddTab({ Title = "Settings", Icon = "settings" })
-}
+local MainTab = Window:MakeTab({
+    Name = "Main",
+    Icon = "rbxassetid://4483345998",
+    PremiumOnly = false
+})
 
-Tabs.Main:AddToggle("IsMasterToggle", {
-    Title = "Role: Master (Chủ thuyền)",
+MainTab:AddToggle({
+    Name = "Role: Master (Chủ thuyền)",
     Default = _G.Config.IsMaster,
     Callback = function(v) _G.Config.IsMaster = v end
 })
 
-Tabs.Main:AddToggle("IsSlaveToggle", {
-    Title = "Role: Slave (Đi theo Master)",
+MainTab:AddToggle({
+    Name = "Role: Slave (Đi theo Master)",
     Default = _G.Config.IsSlave,
     Callback = function(v) _G.Config.IsSlave = v end
 })
 
-Tabs.Main:AddInput("MasterNameInput", {
-    Title = "Tên Master",
+MainTab:AddTextbox({
+    Name = "Tên Master",
     Default = _G.Config.MasterName,
-    Placeholder = "Nhập tên Master...",
+    TextDisappear = true,
     Callback = function(v) _G.Config.MasterName = v end
 })
 
-Tabs.Main:AddToggle("WaterWalkToggle", {
-    Title = "Đứng Trên Mặt Nước",
+MainTab:AddToggle({
+    Name = "Đứng Trên Mặt Nước",
     Default = _G.Config.WaterWalk,
     Callback = function(v) _G.Config.WaterWalk = v end
 })
 
-Tabs.Main:AddToggle("AutoBusoToggle", {
-    Title = "Auto Buso (Haki Vũ Trang)",
+MainTab:AddToggle({
+    Name = "Auto Buso (Haki Vũ Trang)",
     Default = _G.Config.AutoBuso,
     Callback = function(v) _G.Config.AutoBuso = v end
 })
 
-Tabs.Main:AddToggle("AutoV3Toggle", {
-    Title = "Auto Skill V3",
+MainTab:AddToggle({
+    Name = "Auto Skill V3",
     Default = _G.Config.AutoV3,
     Callback = function(v) _G.Config.AutoV3 = v end
 })
 
-Tabs.Main:AddToggle("AutoV4Toggle", {
-    Title = "Auto Skill V4",
+MainTab:AddToggle({
+    Name = "Auto Skill V4",
     Default = _G.Config.AutoV4,
     Callback = function(v) _G.Config.AutoV4 = v end
 })
 
-Tabs.Main:AddToggle("AutoAvoidSeaEventToggle", {
-    Title = "Tự Động Tránh Sea Event",
+MainTab:AddToggle({
+    Name = "Tự Động Tránh Sea Event",
     Default = _G.Config.AutoAvoidSeaEvent,
     Callback = function(v) _G.Config.AutoAvoidSeaEvent = v end
 })
 
-Tabs.Main:AddToggle("AutoSanguineToggle", {
-    Title = "Auto Sanguine Art / Săn Boss",
+MainTab:AddToggle({
+    Name = "Auto Sanguine Art / Săn Boss",
     Default = _G.Config.AutoGetSanguineArt,
     Callback = function(v) _G.Config.AutoGetSanguineArt = v end
 })
 
-Tabs.Main:AddToggle("AutoPullTikiToggle", {
-    Title = "Kéo Tim Về Tiki",
+MainTab:AddToggle({
+    Name = "Kéo Tim Về Tiki",
     Default = _G.Config.AutoPullHeartToTiki,
     Callback = function(v) 
         _G.Config.AutoPullHeartToTiki = v 
@@ -536,8 +527,8 @@ Tabs.Main:AddToggle("AutoPullTikiToggle", {
     end
 })
 
-Tabs.Main:AddToggle("AutoPullHydraToggle", {
-    Title = "Kéo Tim Về Hydra",
+MainTab:AddToggle({
+    Name = "Kéo Tim Về Hydra",
     Default = _G.Config.AutoPullHeartToHydra,
     Callback = function(v) 
         _G.Config.AutoPullHeartToHydra = v 
@@ -545,90 +536,66 @@ Tabs.Main:AddToggle("AutoPullHydraToggle", {
     end
 })
 
-Tabs.Main:AddDropdown("BoatDropdown", {
-    Title = "Chọn Loại Thuyền Mua",
-    Values = {"Dinghy", "Sloop", "Longship"},
-    Default = 1,
+MainTab:AddDropdown({
+    Name = "Chọn Loại Thuyền Mua",
+    Default = "Dinghy",
+    Options = {"Dinghy", "Sloop", "Longship"},
     Callback = function(v) _G.Config.SelectedBoat = v end
 })
 
-Tabs.Teleport:AddButton({
-    Title = "Dịch Chuyển Đến Tiki Outpost",
+local TeleportTab = Window:MakeTab({
+    Name = "Teleport",
+    Icon = "rbxassetid://4483345998",
+    PremiumOnly = false
+})
+
+TeleportTab:AddButton({
+    Name = "Dịch Chuyển Đến Tiki Outpost",
     Callback = function()
         _G.SenakaCharacterMove(_G.SenakaLocations.TikiBoat, _G.Config.TweenSpeed)
     end
 })
 
-Tabs.Teleport:AddButton({
-    Title = "Dịch Chuyển Đến Hydra Island",
+TeleportTab:AddButton({
+    Name = "Dịch Chuyển Đến Hydra Island",
     Callback = function()
         _G.SenakaCharacterMove(_G.SenakaLocations.Hydra, _G.Config.TweenSpeed)
     end
 })
 
-Tabs.Teleport:AddButton({
-    Title = "Dịch Chuyển Đến Spy NPC",
+TeleportTab:AddButton({
+    Name = "Dịch Chuyển Đến Spy NPC",
     Callback = function()
         _G.SenakaCharacterMove(_G.SenakaLocations.SpyNpc, _G.Config.TweenSpeed)
     end
 })
 
-Tabs.Settings:AddSlider("BoatSpeedSlider", {
-    Title = "Tốc Độ Thuyền Bay",
-    Description = "Mặc định 350, tối đa 500",
-    Default = _G.Config.BoatTweenSpeed,
+local SettingsTab = Window:MakeTab({
+    Name = "Settings",
+    Icon = "rbxassetid://4483345998",
+    PremiumOnly = false
+})
+
+SettingsTab:AddSlider({
+    Name = "Tốc Độ Thuyền Bay",
     Min = 100,
     Max = 500,
-    Rounding = 0,
+    Default = _G.Config.BoatTweenSpeed,
+    Color = Color3.fromRGB(255,255,255),
+    Increment = 1,
+    ValueName = "Speed",
     Callback = function(v) _G.Config.BoatTweenSpeed = v end
 })
 
-Tabs.Settings:AddSlider("TweenSpeedSlider", {
-    Title = "Tốc Độ Di Chuyển Nhân Vật",
-    Description = "Chỉnh tốc độ bay/di chuyển cá nhân",
-    Default = _G.Config.TweenSpeed,
+SettingsTab:AddSlider({
+    Name = "Tốc Độ Di Chuyển Nhân Vật",
     Min = 100,
     Max = 500,
-    Rounding = 0,
+    Default = _G.Config.TweenSpeed,
+    Color = Color3.fromRGB(255,255,255),
+    Increment = 1,
+    ValueName = "Speed",
     Callback = function(v) _G.Config.TweenSpeed = v end
 })
 
-pcall(function()
-    local coreGui = game:GetService("CoreGui")
-    if coreGui:FindFirstChild("SenakaToggleBtn") then
-        coreGui.SenakaToggleBtn:Destroy()
-    end
-
-    local ScreenGui = Instance.new("ScreenGui")
-    ScreenGui.Name = "SenakaToggleBtn"
-    ScreenGui.Parent = coreGui
-    ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-
-    local ToggleButton = Instance.new("TextButton")
-    ToggleButton.Name = "ToggleButton"
-    ToggleButton.Parent = ScreenGui
-    ToggleButton.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-    ToggleButton.BorderColor3 = Color3.fromRGB(80, 80, 80)
-    ToggleButton.Position = UDim2.new(0, 20, 0, 150)
-    ToggleButton.Size = UDim2.new(0, 110, 0, 40)
-    ToggleButton.Font = Enum.Font.SourceSansBold
-    ToggleButton.Text = "Ẩn / Hiện Menu"
-    ToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-    ToggleButton.TextSize = 14
-
-    local UICorner = Instance.new("UICorner")
-    UICorner.CornerRadius = UDim.new(0, 8)
-    UICorner.Parent = ToggleButton
-
-    local menuVisible = true
-    ToggleButton.MouseButton1Click:Connect(function()
-        menuVisible = not menuVisible
-        Window:Minimize()
-    end)
-end)
-
-Fluent:Notify({
-    Title = "Senaka Hub",
-    Content = "Tải thành công trên mọi Executor điện thoại!",
-    Duration = 5
-})
+OrionLib:Init()
