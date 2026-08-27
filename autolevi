@@ -227,6 +227,16 @@ task.spawn(function()
 end)
 
 task.spawn(function() 
+    while task.wait(0.5) do 
+        if _G.Config.AutoV3 then 
+            pcall(function() 
+                ReplicatedStorage.Remotes.CommF_:InvokeServer("ActivateAbility")
+            end) 
+        end 
+    end 
+end)
+
+task.spawn(function() 
     while task.wait(0.8) do 
         if _G.Config.AutoV4 then 
             pcall(function() ReplicatedStorage.Remotes.CommF_:InvokeServer("ActivateRaceTransformation") end) 
@@ -551,7 +561,7 @@ end
 
 task.spawn(function()
     task.wait(1)
-    ShowNotification("🍌 Banana Hub Loaded Successfully!")
+    ShowNotification("SENAKA HUB 🍋- KAITUN LEVIATHAN Loaded!")
 end)
 
 local ToggleBtn = Instance.new("ImageButton")
@@ -593,11 +603,11 @@ local TitleLabel = Instance.new("TextLabel")
 TitleLabel.Parent = TopBar
 TitleLabel.BackgroundTransparency = 1
 TitleLabel.Position = UDim2.new(0, 12, 0, 0)
-TitleLabel.Size = UDim2.new(0, 300, 1, 0)
+TitleLabel.Size = UDim2.new(0, 400, 1, 0)
 TitleLabel.Font = Enum.Font.SourceSansBold
-TitleLabel.Text = "🍌 BANANA HUB - SENAKA EDITION"
+TitleLabel.Text = "SENAKA HUB 🍋- KAITUN LEVIATHAN"
 TitleLabel.TextColor3 = Color3.fromRGB(255, 200, 0)
-TitleLabel.TextSize = 15
+TitleLabel.TextSize = 14
 TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
 
 local CloseBtn = Instance.new("TextButton")
