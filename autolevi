@@ -2,30 +2,30 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
-local CoreGui = game:GetService("CoreGui")
 local Lighting = game:GetService("Lighting")
 local LocalPlayer = Players.LocalPlayer
 
-pcall(function()
-    ReplicatedStorage.Remotes.CommF_:InvokeServer("SetTeam", "Marines")
-end)
-
-pcall(function()
-    local rawMeta = getrawmetatable(game)
-    if setreadonly then setreadonly(rawMeta, false) end
-    local oldNamecall = rawMeta.__namecall
-    rawMeta.__namecall = newcclosure(function(self, ...)
-        local method = getnamecallmethod()
-        if method == "FireServer" or method == "InvokeServer" then
-            local nameStr = tostring(self)
-            if nameStr:find("Ban") or nameStr:find("Check") or nameStr:find("Admin") or nameStr:find("Detection") then
-                return nil
-            end
-        end
-        if method == "Kick" or method == "kick" then return nil end
-        return oldNamecall(self, ...)
+task.spawn(function()
+    pcall(function()
+        ReplicatedStorage.Remotes.CommF_:InvokeServer("SetTeam", "Marines")
     end)
-    if setreadonly then setreadonly(rawMeta, true) end
+    pcall(function()
+        local rawMeta = getrawmetatable(game)
+        if setreadonly then setreadonly(rawMeta, false) end
+        local oldNamecall = rawMeta.__namecall
+        rawMeta.__namecall = newcclosure(function(self, ...)
+            local method = getnamecallmethod()
+            if method == "FireServer" or method == "InvokeServer" then
+                local nameStr = tostring(self)
+                if nameStr:find("Ban") or nameStr:find("Check") or nameStr:find("Admin") or nameStr:find("Detection") then
+                    return nil
+                end
+            end
+            if method == "Kick" or method == "kick" then return nil end
+            return oldNamecall(self, ...)
+        end)
+        if setreadonly then setreadonly(rawMeta, true) end
+    end)
 end)
 
 task.spawn(function()
@@ -96,7 +96,6 @@ _G.SenakaCharacterMove = function(targetCFrame, speed)
     hum.PlatformStand = false
 end
 
--- Sửa hàm nhận diện thuyền chính xác hơn cho mọi loại thuyền (Kiểm tra cả Owner và khoảng cách gần)
 local function GetPlayerBoat()
     local char = LocalPlayer.Character
     local root = char and char:FindFirstChild("HumanoidRootPart")
@@ -106,18 +105,13 @@ local function GetPlayerBoat()
             local ownerVal = obj:FindFirstChild("Owner")
             local isOwnedByName = obj.Name:find(LocalPlayer.Name) or (ownerVal and tostring(ownerVal.Value) == LocalPlayer.Name)
             
-            
-            if isOwnedByName then
-                return obj
-            end
-            
+            if isOwnedByName then return obj end
             
             if root then
                 local boatPart = obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart")
                 if boatPart and (boatPart.Position - root.Position).Magnitude < 120 then
                     for _, d in pairs(obj:GetDescendants()) do
                         if d:IsA("VehicleSeat") and not d.Occupant then
-                            -- Nếu thuyền có ghế trống và nằm gần player ngay sau khi mua -> Nhận luôn
                             return obj
                         end
                     end
@@ -131,8 +125,6 @@ end
 local lastBuyTime = 0
 local function FindAndInteractBoatDealer()
     if tick() - lastBuyTime < 6 then return end
-    
-    -- Sửa cách tìm NPC Boat Dealer chuẩn trong Blox Fruits (tránh nhầm với thuyền trên biển)
     local dealerPart = nil
     for _, obj in pairs(workspace:GetDescendants()) do
         if obj:IsA("Model") and (obj.Name:lower() == "boat dealer" or obj.Name:lower():find("boatdealer")) then
@@ -143,7 +135,6 @@ local function FindAndInteractBoatDealer()
         end
     end
     
-   
     if not dealerPart then
         for _, obj in pairs(workspace:GetChildren()) do
             if obj:IsA("Model") and obj:FindFirstChild("HumanoidRootPart") and obj:FindFirstChild("Humanoid") then
@@ -157,7 +148,6 @@ local function FindAndInteractBoatDealer()
 
     local char = LocalPlayer.Character
     local root = char and char:FindFirstChild("HumanoidRootPart")
-
     if dealerPart and root then
         if (dealerPart.Position - root.Position).Magnitude > 10 then
             _G.SenakaCharacterMove(dealerPart.CFrame * CFrame.new(0, 3, 3), _G.Config.TweenSpeed)
@@ -165,10 +155,8 @@ local function FindAndInteractBoatDealer()
         end
     end
 
-    local boatName = _G.Config.SelectedBoat or "Dinghy"
-    
     pcall(function()
-        ReplicatedStorage.Remotes.CommF_:InvokeServer("BuyBoat", boatName)
+        ReplicatedStorage.Remotes.CommF_:InvokeServer("BuyBoat", _G.Config.SelectedBoat or "Dinghy")
     end)
     lastBuyTime = tick()
     task.wait(2)
@@ -178,14 +166,11 @@ local processedBoats = {}
 local function SecureBoatPhysics(boatModel)
     if not boatModel or processedBoats[boatModel] then return end
     processedBoats[boatModel] = true
-    
     task.spawn(function()
         task.wait(0.5)
         pcall(function()
             for _, part in pairs(boatModel:GetDescendants()) do
-                if part:IsA("BasePart") then
-                    part.CanCollide = true
-                end
+                if part:IsA("BasePart") then part.CanCollide = true end
             end
         end)
     end)
@@ -213,8 +198,7 @@ local function CountPlayersOnBoat(boatModel)
         for _, p in pairs(Players:GetPlayers()) do
             if p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
                 if not countedPlayers[p] then
-                    local dist = (p.Character.HumanoidRootPart.Position - boatPart.Position).Magnitude
-                    if dist < 40 then
+                    if (p.Character.HumanoidRootPart.Position - boatPart.Position).Magnitude < 40 then
                         countedPlayers[p] = true
                         count = count + 1
                     end
@@ -222,7 +206,6 @@ local function CountPlayersOnBoat(boatModel)
             end
         end
     end
-
     return count
 end
 
@@ -240,7 +223,6 @@ RunService.Stepped:Connect(function()
             local char = LocalPlayer.Character
             local root = char and char:FindFirstChild("HumanoidRootPart")
             local myBoat = GetPlayerBoat()
-            
             local isNearBoat = false
             if myBoat then
                 local boatPart = myBoat.PrimaryPart or myBoat:FindFirstChildWhichIsA("BasePart")
@@ -281,9 +263,7 @@ end)
 task.spawn(function()
     while task.wait(1.2) do
         if _G.Config.AutoV3 then
-            pcall(function()
-                ReplicatedStorage.Remotes.CommF_:InvokeServer("ProccessAbillity")
-            end)
+            pcall(function() ReplicatedStorage.Remotes.CommF_:InvokeServer("ProccessAbillity") end)
             pcall(function()
                 if ReplicatedStorage:FindFirstChild("Remotes") and ReplicatedStorage.Remotes:FindFirstChild("CommE") then
                     ReplicatedStorage.Remotes.CommE:FireServer("ActivateAbility")
@@ -296,9 +276,7 @@ end)
 task.spawn(function()
     while task.wait(0.8) do
         if _G.Config.AutoV4 then
-            pcall(function()
-                ReplicatedStorage.Remotes.CommF_:InvokeServer("ActivateRaceTransformation")
-            end)
+            pcall(function() ReplicatedStorage.Remotes.CommF_:InvokeServer("ActivateRaceTransformation") end)
         end
     end
 end)
@@ -330,10 +308,7 @@ end)
 task.spawn(function()
     while task.wait(0.5) do
         if _G.Config.AutoTravel ~= "" then
-            local destName = _G.Config.AutoTravel
-            pcall(function()
-                ReplicatedStorage.Remotes.CommF_:InvokeServer("Travel", destName)
-            end)
+            pcall(function() ReplicatedStorage.Remotes.CommF_:InvokeServer("Travel", _G.Config.AutoTravel) end)
             _G.Config.AutoTravel = ""
         end
     end
@@ -365,10 +340,11 @@ task.spawn(function()
             if enemyTarget then
                 Root.CFrame = enemyTarget.CFrame * CFrame.new(0, 5, 3)
                 pcall(function()
-                    if game:GetService("VirtualInputManager") then
-                        game:GetService("VirtualInputManager"):SendMouseButtonEvent(0, 0, 0, true, game, 1)
+                    local vim = game:GetService("VirtualInputManager")
+                    if vim then
+                        vim:SendMouseButtonEvent(0, 0, 0, true, game, 1)
                         task.wait(0.05)
-                        game:GetService("VirtualInputManager"):SendMouseButtonEvent(0, 0, 0, false, game, 1)
+                        vim:SendMouseButtonEvent(0, 0, 0, false, game, 1)
                     end
                 end)
             end
@@ -386,7 +362,6 @@ task.spawn(function()
             if _G.Config.IsMaster and Root and Hum and Hum.Health > 0 then
                 local IceIsland = workspace:FindFirstChild("LeviathanIceIsland")
                 local Heart = workspace:FindFirstChild("LeviathanHeart")
-                
                 local distToTiki = (Root.Position - _G.SenakaLocations.TikiBoat.Position).Magnitude
                 
                 if distToTiki > 150 and not GetPlayerBoat() and not IceIsland then
@@ -397,7 +372,6 @@ task.spawn(function()
                         FindAndInteractBoatDealer()
                     else
                         SecureBoatPhysics(myBoat)
-                        
                         if not Hum.SeatPart then
                             local targetSeat = nil
                             for _, d in pairs(myBoat:GetDescendants()) do
@@ -406,13 +380,10 @@ task.spawn(function()
                                     break
                                 end
                             end
-                            
                             if targetSeat then
                                 Root.CFrame = targetSeat.CFrame + Vector3.new(0, 2, 0)
                                 task.wait(0.2)
-                                pcall(function()
-                                    targetSeat:Sit(Hum)
-                                end)
+                                pcall(function() targetSeat:Sit(Hum) end)
                             else
                                 local boatPart = myBoat.PrimaryPart or myBoat:FindFirstChildWhichIsA("BasePart")
                                 if boatPart and (Root.Position - boatPart.Position).Magnitude > 15 then
@@ -421,9 +392,7 @@ task.spawn(function()
                             end
                         end
 
-                        local totalPlayersOnBoat = CountPlayersOnBoat(myBoat)
-                        
-                        if totalPlayersOnBoat >= 5 then
+                        if CountPlayersOnBoat(myBoat) >= 5 then
                             if IceIsland then
                                 local islandPart = IceIsland:FindFirstChild("PrimaryPart") or IceIsland:FindFirstChildWhichIsA("BasePart")
                                 if islandPart then
@@ -432,24 +401,15 @@ task.spawn(function()
                                     else
                                         _G.SenakaCharacterMove(_G.SenakaLocations.SpyNpc, _G.Config.TweenSpeed)
                                         task.wait(0.5)
-                                        pcall(function()
-                                            ReplicatedStorage.Remotes.CommF_:InvokeServer("FindLeviathan")
-                                        end)
+                                        pcall(function() ReplicatedStorage.Remotes.CommF_:InvokeServer("FindLeviathan") end)
                                     end
                                 end
-
-                                if Heart then
-                                    pcall(function()
-                                        ReplicatedStorage.Remotes.CommF_:InvokeServer("PullHeart")
-                                    end)
-                                end
+                                if Heart then pcall(function() ReplicatedStorage.Remotes.CommF_:InvokeServer("PullHeart") end) end
                             else
                                 if (Root.Position - _G.SenakaLocations.SpyNpc.Position).Magnitude > 30 then
                                     _G.SenakaCharacterMove(_G.SenakaLocations.SpyNpc, _G.Config.TweenSpeed)
                                 else
-                                    pcall(function()
-                                        ReplicatedStorage.Remotes.CommF_:InvokeServer("FindLeviathan")
-                                    end)
+                                    pcall(function() ReplicatedStorage.Remotes.CommF_:InvokeServer("FindLeviathan") end)
                                 end
                             end
                         else
@@ -469,211 +429,179 @@ task.spawn(function()
                         break
                     end
                 end
-
                 if MasterPlayer and MasterPlayer.Character then
                     local MasterRoot = MasterPlayer.Character:FindFirstChild("HumanoidRootPart")
-                    if MasterRoot then
-                        if not Hum.SeatPart then
-                            local TargetSeat = nil
-                            for _, obj in pairs(workspace:GetDescendants()) do
-                                if (obj:IsA("VehicleSeat") or obj:IsA("Seat")) and not obj.Occupant then
-                                    if (obj.Position - MasterRoot.Position).Magnitude < 100 then
-                                        TargetSeat = obj
-                                        break
-                                    end
+                    if MasterRoot and not Hum.SeatPart then
+                        local TargetSeat = nil
+                        for _, obj in pairs(workspace:GetDescendants()) do
+                            if (obj:IsA("VehicleSeat") or obj:IsA("Seat")) and not obj.Occupant then
+                                if (obj.Position - MasterRoot.Position).Magnitude < 100 then
+                                    TargetSeat = obj
+                                    break
                                 end
                             end
-
-                            if TargetSeat then
-                                Root.CFrame = TargetSeat.CFrame * CFrame.new(0, 2, 0)
-                                task.wait(0.2)
-                                TargetSeat:Sit(Hum)
-                            elseif (Root.Position - MasterRoot.Position).Magnitude > 20 then
-                                _G.SenakaCharacterMove(MasterRoot.CFrame * CFrame.new(0, 3, -3), _G.Config.TweenSpeed)
-        local success, Fluent = pcall(function()
-    return loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/main/main.lua"))()
+                        end
+                        if TargetSeat then
+                            Root.CFrame = TargetSeat.CFrame * CFrame.new(0, 2, 0)
+                            task.wait(0.2)
+                            TargetSeat:Sit(Hum)
+                        elseif (Root.Position - MasterRoot.Position).Magnitude > 20 then
+                            _G.SenakaCharacterMove(MasterRoot.CFrame * CFrame.new(0, 3, -3), _G.Config.TweenSpeed)
+                        end
+                    end
+                end
+            end
+        end
+    end
 end)
-
-if not success or not Fluent then
-    success, Fluent = pcall(function()
+task.spawn(function()
+    local success, Fluent = pcall(function()
         return loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
     end)
-end
-
-if not success or not Fluent then return end
-
-_G.SenakaWindow = Fluent:CreateWindow({
-    Title = "SENAKA HUB",
-    SubTitle = "Kaitun Leviathan",
-    TabWidth = 140,
-    Size = UDim2.new(0, 480, 0, 320),
-    Acrylic = false,
-    Theme = "Dark",
-    MinimizeKey = Enum.KeyCode.LeftControl
-})
-
-_G.SenakaTabs = {
-    Automation = _G.SenakaWindow:AddTab({ Title = "Automation", Icon = "home" }),
-    Travel = _G.SenakaWindow:AddTab({ Title = "Travel", Icon = "map" })
-}
-
-pcall(function()
-    local coreGui = game:GetService("CoreGui")
-    if coreGui:FindFirstChild("SenakaToggleIcon") then
-        coreGui.SenakaToggleIcon:Destroy()
+    if not success or not Fluent then
+        success, Fluent = pcall(function()
+            return loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/main/main.lua"))()
+        end)
     end
-end)
+    if not success or not Fluent then return end
 
-local targetParent = (syn and syn.protect_gui) and syn.protect_gui(CoreGui) or (gethui and gethui()) or CoreGui
+    local Window = Fluent:CreateWindow({
+        Title = "SENAKA HUB",
+        SubTitle = "Kaitun Leviathan",
+        TabWidth = 140,
+        Size = UDim2.new(0, 480, 0, 320),
+        Acrylic = false,
+        Theme = "Dark",
+        MinimizeKey = Enum.KeyCode.LeftControl
+    })
 
-local sg = Instance.new("ScreenGui")
-sg.Name = "SenakaToggleIcon"
-sg.ResetOnSpawn = false
-sg.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-sg.Parent = targetParent
+    local Tabs = {
+        Automation = Window:AddTab({ Title = "Automation", Icon = "home" }),
+        Travel = Window:AddTab({ Title = "Travel", Icon = "map" })
+    }
 
-local btn = Instance.new("ImageButton")
-btn.Name = "ToggleButton"
-btn.Size = UDim2.new(0, 50, 0, 50)
-btn.Position = UDim2.new(0, 20, 0.4, 0)
-btn.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-btn.BorderSizePixel = 0
-btn.Active = true
-btn.Draggable = true
-btn.Image = "rbxassetid://89042380317763"
-btn.Parent = sg
-
-local corner = Instance.new("UICorner")
-corner.CornerRadius = UDim.new(0, 12)
-corner.Parent = btn
-
-local stroke = Instance.new("UIStroke")
-stroke.Color = Color3.fromRGB(255, 170, 0)
-stroke.Thickness = 2
-stroke.Parent = btn
-
-local windowVisible = true
-
-btn.MouseButton1Click:Connect(function()
-    windowVisible = not windowVisible
-    
     pcall(function()
-        if _G.SenakaWindow then
-            if type(_G.SenakaWindow.Minimize) == "function" then
-                if windowVisible then
-                    _G.SenakaWindow:Unpack()
-                else
-                    _G.SenakaWindow:Minimize()
-                end
-            elseif _G.SenakaWindow.Enabled ~= nil then
-                _G.SenakaWindow.Enabled = windowVisible
-            end
-        elseif _G.Fluent and _G.Fluent.Window then
-            _G.Fluent.Window:Minimize()
-        end
+        local coreGui = game:GetService("CoreGui")
+        if coreGui:FindFirstChild("SenakaToggleIcon") then coreGui.SenakaToggleIcon:Destroy() end
     end)
-    
-    TweenService:Create(btn, TweenInfo.new(0.1), {Size = UDim2.new(0, 42, 0, 42)}):Play()
-    task.wait(0.1)
-    TweenService:Create(btn, TweenInfo.new(0.1), {Size = UDim2.new(0, 50, 0, 50)}):Play()
-end)
 
-_G.SenakaTabs.Automation:AddInput("MasterNameInput", {
-    Title = "Master Name",
-    Default = _G.Config.MasterName,
-    Numeric = false,
-    Finished = false,
-    Callback = function(Value)
-        _G.Config.MasterName = Value
-    end
-})
+    local targetParent = (syn and syn.protect_gui) and syn.protect_gui(game:GetService("CoreGui")) or (gethui and gethui()) or game:GetService("CoreGui")
+    local sg = Instance.new("ScreenGui", targetParent)
+    sg.Name = "SenakaToggleIcon"
+    sg.ResetOnSpawn = false
+    sg.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
-_G.SenakaTabs.Automation:AddToggle("MasterToggle", {
-    Title = "Master",
-    Default = _G.Config.IsMaster,
-    Callback = function(Value)
-        _G.Config.IsMaster = Value
-        if Value then _G.Config.IsSlave = false end
-    end
-})
+    local btn = Instance.new("ImageButton", sg)
+    btn.Name = "ToggleButton"
+    btn.Size = UDim2.new(0, 50, 0, 50)
+    btn.Position = UDim2.new(0, 20, 0.4, 0)
+    btn.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+    btn.BorderSizePixel = 0
+    btn.Active = true
+    btn.Draggable = true
+    btn.Image = "rbxassetid://89042380317763"
 
-_G.SenakaTabs.Automation:AddToggle("SlaveToggle", {
-    Title = "Slave",
-    Default = _G.Config.IsSlave,
-    Callback = function(Value)
-        _G.Config.IsSlave = Value
-        if Value then _G.Config.IsMaster = false end
-    end
-})
+    local corner = Instance.new("UICorner", btn)
+    corner.CornerRadius = UDim.new(0, 12)
 
-_G.SenakaTabs.Automation:AddToggle("WaterWalkToggle", {
-    Title = "Water Walk",
-    Default = _G.Config.WaterWalk,
-    Callback = function(Value)
-        _G.Config.WaterWalk = Value
-    end
-})
+    local stroke = Instance.new("UIStroke", btn)
+    stroke.Color = Color3.fromRGB(255, 170, 0)
+    stroke.Thickness = 2
 
-_G.SenakaTabs.Automation:AddToggle("AutoBusoToggle", {
-    Title = "Auto Buso",
-    Default = _G.Config.AutoBuso,
-    Callback = function(Value)
-        _G.Config.AutoBuso = Value
-    end
-})
+    btn.MouseButton1Click:Connect(function()
+        pcall(function() Window:Minimize() end)
+        game:GetService("TweenService"):Create(btn, TweenInfo.new(0.1), {Size = UDim2.new(0, 42, 0, 42)}):Play()
+        task.wait(0.1)
+        game:GetService("TweenService"):Create(btn, TweenInfo.new(0.1), {Size = UDim2.new(0, 50, 0, 50)}):Play()
+    end)
 
-_G.SenakaTabs.Automation:AddToggle("AutoV3Toggle", {
-    Title = "Auto V3",
-    Default = _G.Config.AutoV3,
-    Callback = function(Value)
-        _G.Config.AutoV3 = Value
-    end
-})
+    Tabs.Automation:AddInput("MasterNameInput", {
+        Title = "Master Name",
+        Default = _G.Config.MasterName,
+        Numeric = false,
+        Finished = false,
+        Callback = function(Value) _G.Config.MasterName = Value end
+    })
 
-_G.SenakaTabs.Automation:AddToggle("AutoV4Toggle", {
-    Title = "Auto V4",
-    Default = _G.Config.AutoV4,
-    Callback = function(Value)
-        _G.Config.AutoV4 = Value
-    end
-})
-
-_G.SenakaTabs.Automation:AddToggle("AvoidSeaEventToggle", {
-    Title = "Avoid Sea Event",
-    Default = _G.Config.AutoAvoidSeaEvent,
-    Callback = function(Value)
-        _G.Config.AutoAvoidSeaEvent = Value
-    end
-})
-
-_G.SenakaTabs.Automation:AddToggle("AutoSanguineArtToggle", {
-    Title = "Auto Sanguine Art",
-    Default = _G.Config.AutoGetSanguineArt,
-    Callback = function(Value)
-        _G.Config.AutoGetSanguineArt = Value
-    end
-})
-
-_G.SenakaTabs.Automation:AddDropdown("BoatDropdown", {
-    Title = "Select Boat",
-    Values = {"Dinghy", "Sloop", "Sleigh", "Mirage", "FlowerBoat", "Speedboat"},
-    Multi = false,
-    Default = 1,
-    Callback = function(Value)
-        _G.Config.SelectedBoat = Value
-    end
-})
-
-_G.SenakaTabs.Travel:AddDropdown("TravelDropdown", {
-    Title = "Quick Travel",
-    Values = {"Tiki Outpost", "Hydra Island"},
-    Multi = false,
-    Default = 1,
-    Callback = function(Value)
-        if Value == "Tiki Outpost" then
-            _G.Config.AutoTravel = "TikiOutpost"
-        elseif Value == "Hydra Island" then
-            _G.Config.AutoTravel = "HydraIsland"
+    Tabs.Automation:AddToggle("MasterToggle", {
+        Title = "Master",
+        Default = _G.Config.IsMaster,
+        Callback = function(Value)
+            _G.Config.IsMaster = Value
+            if Value then _G.Config.IsSlave = false end
         end
-    end
-})
+    })
+
+    Tabs.Automation:AddToggle("SlaveToggle", {
+        Title = "Slave",
+        Default = _G.Config.IsSlave,
+        Callback = function(Value)
+            _G.Config.IsSlave = Value
+            if Value then _G.Config.IsMaster = false end
+        end
+    })
+
+    Tabs.Automation:AddToggle("WaterWalkToggle", {
+        Title = "Water Walk",
+        Default = _G.Config.WaterWalk,
+        Callback = function(Value) _G.Config.WaterWalk = Value end
+    })
+
+    Tabs.Automation:AddToggle("AutoBusoToggle", {
+        Title = "Auto Buso",
+        Default = _G.Config.AutoBuso,
+        Callback = function(Value) _G.Config.AutoBuso = Value end
+    })
+
+    Tabs.Automation:AddToggle("AutoV3Toggle", {
+        Title = "Auto V3",
+        Default = _G.Config.AutoV3,
+        Callback = function(Value) _G.Config.AutoV3 = Value end
+    })
+
+    Tabs.Automation:AddToggle("AutoV4Toggle", {
+        Title = "Auto V4",
+        Default = _G.Config.AutoV4,
+        Callback = function(Value) _G.Config.AutoV4 = Value end
+    })
+
+    Tabs.Automation:AddToggle("AvoidSeaEventToggle", {
+        Title = "Avoid Sea Event",
+        Default = _G.Config.AutoAvoidSeaEvent,
+        Callback = function(Value) _G.Config.AutoAvoidSeaEvent = Value end
+    })
+
+    Tabs.Automation:AddToggle("AutoSanguineArtToggle", {
+        Title = "Auto Sanguine Art",
+        Default = _G.Config.AutoGetSanguineArt,
+        Callback = function(Value) _G.Config.AutoGetSanguineArt = Value end
+    })
+
+    Tabs.Automation:AddDropdown("BoatDropdown", {
+        Title = "Select Boat",
+        Values = {"Dinghy", "Sloop", "Sleigh", "Mirage", "FlowerBoat", "Speedboat"},
+        Multi = false,
+        Default = 1,
+        Callback = function(Value) _G.Config.SelectedBoat = Value end
+    })
+
+    Tabs.Travel:AddDropdown("TravelDropdown", {
+        Title = "Quick Travel",
+        Values = {"Tiki Outpost", "Hydra Island"},
+        Multi = false,
+        Default = 1,
+        Callback = function(Value)
+            if Value == "Tiki Outpost" then
+                _G.Config.AutoTravel = "TikiOutpost"
+            elseif Value == "Hydra Island" then
+                _G.Config.AutoTravel = "HydraIsland"
+            end
+        end
+    })
+
+    Fluent:Notify({
+        Title = "Senaka Hub",
+        Content = "Đã tải giao diện thành công!",
+        Duration = 5
+    })
+end)
