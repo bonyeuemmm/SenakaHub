@@ -227,16 +227,6 @@ task.spawn(function()
 end)
 
 task.spawn(function() 
-    while task.wait(0.5) do 
-        if _G.Config.AutoV3 then 
-            pcall(function() 
-                ReplicatedStorage.Remotes.CommF_:InvokeServer("ActivateAbility")
-            end) 
-        end 
-    end 
-end)
-
-task.spawn(function() 
     while task.wait(0.8) do 
         if _G.Config.AutoV4 then 
             pcall(function() ReplicatedStorage.Remotes.CommF_:InvokeServer("ActivateRaceTransformation") end) 
@@ -503,6 +493,67 @@ ScreenGui.Parent = targetParent
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 ScreenGui.ResetOnSpawn = false
 
+local NotificationGui = Instance.new("ScreenGui")
+NotificationGui.Name = "SenakaNotificationGui"
+NotificationGui.Parent = targetParent
+NotificationGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+NotificationGui.ResetOnSpawn = false
+
+local NotificationContainer = Instance.new("Frame")
+NotificationContainer.Parent = NotificationGui
+NotificationContainer.BackgroundTransparency = 1
+NotificationContainer.Position = UDim2.new(1, -270, 0, 20)
+NotificationContainer.Size = UDim2.new(0, 250, 1, -40)
+
+local UIListLayoutNotif = Instance.new("UIListLayout")
+UIListLayoutNotif.Parent = NotificationContainer
+UIListLayoutNotif.SortOrder = Enum.SortOrder.LayoutOrder
+UIListLayoutNotif.VerticalAlignment = Enum.VerticalAlignment.Bottom
+UIListLayoutNotif.Padding = UDim.new(0, 8)
+
+local function ShowNotification(text)
+    task.spawn(function()
+        local notifBox = Instance.new("Frame")
+        notifBox.Parent = NotificationContainer
+        notifBox.BackgroundColor3 = Color3.fromRGB(22, 22, 22)
+        notifBox.BorderColor3 = Color3.fromRGB(255, 190, 0)
+        notifBox.BorderSizePixel = 1
+        notifBox.Size = UDim2.new(1, 0, 0, 40)
+        notifBox.Position = UDim2.new(1, 50, 0, 0)
+
+        local corner = Instance.new("UICorner")
+        corner.CornerRadius = UDim.new(0, 6)
+        corner.Parent = notifBox
+
+        local label = Instance.new("TextLabel")
+        label.Parent = notifBox
+        label.BackgroundTransparency = 1
+        label.Position = UDim2.new(0, 10, 0, 0)
+        label.Size = UDim2.new(1, -20, 1, 0)
+        label.Font = Enum.Font.SourceSansBold
+        label.Text = text
+        label.TextColor3 = Color3.fromRGB(255, 200, 0)
+        label.TextSize = 13
+        label.TextXAlignment = Enum.TextXAlignment.Left
+
+        local tweenIn = game:GetService("TweenService"):Create(notifBox, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Position = UDim2.new(0, 0, 0, 0)})
+        tweenIn:Play()
+        tweenIn.Completed:Wait()
+
+        task.wait(3)
+
+        local tweenOut = game:GetService("TweenService"):Create(notifBox, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Position = UDim2.new(1, 50, 0, 0)})
+        tweenOut:Play()
+        tweenOut.Completed:Wait()
+        notifBox:Destroy()
+    end)
+end
+
+task.spawn(function()
+    task.wait(1)
+    ShowNotification("🍌 Banana Hub Loaded Successfully!")
+end)
+
 local ToggleBtn = Instance.new("ImageButton")
 ToggleBtn.Name = "ToggleBtn"
 ToggleBtn.Parent = ScreenGui
@@ -600,7 +651,7 @@ local function CreatePage(name)
     scroller.Active = true
     scroller.BackgroundTransparency = 1
     scroller.Size = UDim2.new(1, 0, 1, 0)
-    scroller.CanvasSize = UDim2.new(0, 0, 0, 600)
+    scroller.CanvasSize = UDim2.new(0, 0, 0, 700)
     scroller.ScrollBarThickness = 4
     scroller.Visible = false
 
@@ -615,7 +666,6 @@ end
 
 local pageMain = CreatePage("Main")
 local pageTeleport = CreatePage("Teleport")
-local pageSettings = CreatePage("Settings")
 pageMain.Visible = true
 
 local function CreateTabButton(text, targetPage)
@@ -640,7 +690,6 @@ end
 
 CreateTabButton("Main Features", pageMain)
 CreateTabButton("Teleports", pageTeleport)
-CreateTabButton("Settings / UI", pageSettings)
 
 local function AddToggleToPage(page, title, defaultVal, callback)
     local frame = Instance.new("Frame")
@@ -706,80 +755,110 @@ local function AddButtonToPage(page, title, callback)
 end
 
 local cfg = _G.Config or {}
-AddToggleToPage(pageMain, "Role: Master (Chủ thuyền)", cfg.IsMaster or false, function(v) if _G.Config then _G.Config.IsMaster = v end end)
-AddToggleToPage(pageMain, "Role: Slave (Đi theo Master)", cfg.IsSlave or false, function(v) if _G.Config then _G.Config.IsSlave = v end end)
-AddToggleToPage(pageMain, "Đứng Trên Mặt Nước", cfg.WaterWalk or false, function(v) if _G.Config then _G.Config.WaterWalk = v end end)
-AddToggleToPage(pageMain, "Auto Buso (Haki Vũ Trang)", cfg.AutoBuso or false, function(v) if _G.Config then _G.Config.AutoBuso = v end end)
-AddToggleToPage(pageMain, "Auto Skill V3", cfg.AutoV3 or false, function(v) if _G.Config then _G.Config.AutoV3 = v end end)
-AddToggleToPage(pageMain, "Auto Skill V4", cfg.AutoV4 or false, function(v) if _G.Config then _G.Config.AutoV4 = v end end)
-AddToggleToPage(pageMain, "Tự Động Tránh Sea Event", cfg.AutoAvoidSeaEvent or false, function(v) if _G.Config then _G.Config.AutoAvoidSeaEvent = v end end)
-AddToggleToPage(pageMain, "Auto Sanguine Art / Săn Boss", cfg.AutoGetSanguineArt or false, function(v) if _G.Config then _G.Config.AutoGetSanguineArt = v end end)
+
+local masterInputFrame = Instance.new("Frame")
+masterInputFrame.Parent = pageMain
+masterInputFrame.BackgroundColor3 = Color3.fromRGB(28, 28, 28)
+masterInputFrame.Size = UDim2.new(1, -10, 0, 50)
+local masterCorner = Instance.new("UICorner")
+masterCorner.CornerRadius = UDim.new(0, 6)
+masterCorner.Parent = masterInputFrame
+
+local masterLabel = Instance.new("TextLabel")
+masterLabel.Parent = masterInputFrame
+masterLabel.BackgroundTransparency = 1
+masterLabel.Position = UDim2.new(0, 10, 0, 2)
+masterLabel.Size = UDim2.new(1, -20, 0, 20)
+masterLabel.Font = Enum.Font.SourceSansBold
+masterLabel.Text = "Nhập Tên Master (Chủ Thuyền):"
+masterLabel.TextColor3 = Color3.fromRGB(240, 240, 240)
+masterLabel.TextSize = 12
+masterLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+local masterTextBox = Instance.new("TextBox")
+masterTextBox.Parent = masterInputFrame
+masterTextBox.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+masterTextBox.Position = UDim2.new(0, 10, 0, 24)
+masterTextBox.Size = UDim2.new(1, -20, 0, 22)
+masterTextBox.Font = Enum.Font.SourceSans
+masterTextBox.Text = (_G.Config and _G.Config.MasterName) or "bonbicuttay_999"
+masterTextBox.TextColor3 = Color3.fromRGB(255, 200, 0)
+masterTextBox.TextSize = 11
+local masterBoxC = Instance.new("UICorner")
+masterBoxC.CornerRadius = UDim.new(0, 4)
+masterBoxC.Parent = masterTextBox
+
+masterTextBox.FocusLost:Connect(function(enterPressed)
+    if enterPressed then
+        if _G.Config then _G.Config.MasterName = masterTextBox.Text end
+        ShowNotification("Đã cập nhật tên Master: " .. masterTextBox.Text)
+    end
+end)
+
+AddToggleToPage(pageMain, "Role: Master (Chủ thuyền)", cfg.IsMaster or false, function(v) 
+    if _G.Config then _G.Config.IsMaster = v end 
+    ShowNotification("Role Master: " .. tostring(v))
+end)
+AddToggleToPage(pageMain, "Role: Slave (Đi theo Master)", cfg.IsSlave or false, function(v) 
+    if _G.Config then _G.Config.IsSlave = v end 
+    ShowNotification("Role Slave: " .. tostring(v))
+end)
+AddToggleToPage(pageMain, "Đứng Trên Mặt Nước", cfg.WaterWalk or false, function(v) 
+    if _G.Config then _G.Config.WaterWalk = v end 
+    ShowNotification("Đứng Mặt Nước: " .. tostring(v))
+end)
+AddToggleToPage(pageMain, "Auto Buso (Haki Vũ Trang)", cfg.AutoBuso or false, function(v) 
+    if _G.Config then _G.Config.AutoBuso = v end 
+    ShowNotification("Auto Buso: " .. tostring(v))
+end)
+AddToggleToPage(pageMain, "Auto Skill V3", cfg.AutoV3 or false, function(v) 
+    if _G.Config then _G.Config.AutoV3 = v end 
+    ShowNotification("Auto Skill V3: " .. tostring(v))
+end)
+AddToggleToPage(pageMain, "Auto Skill V4", cfg.AutoV4 or false, function(v) 
+    if _G.Config then _G.Config.AutoV4 = v end 
+    ShowNotification("Auto Skill V4: " .. tostring(v))
+end)
+AddToggleToPage(pageMain, "Tự Động Tránh Sea Event", cfg.AutoAvoidSeaEvent or false, function(v) 
+    if _G.Config then _G.Config.AutoAvoidSeaEvent = v end 
+    ShowNotification("Tránh Sea Event: " .. tostring(v))
+end)
+AddToggleToPage(pageMain, "Auto Sanguine Art / Săn Boss", cfg.AutoGetSanguineArt or false, function(v) 
+    if _G.Config then _G.Config.AutoGetSanguineArt = v end 
+    ShowNotification("Auto Sanguine: " .. tostring(v))
+end)
 AddToggleToPage(pageMain, "Kéo Tim Về Tiki", cfg.AutoPullHeartToTiki or false, function(v) 
     if _G.Config then
         _G.Config.AutoPullHeartToTiki = v 
         if v then _G.Config.AutoPullHeartToHydra = false end
     end
+    ShowNotification("Kéo Tim Tiki: " .. tostring(v))
 end)
 AddToggleToPage(pageMain, "Kéo Tim Về Hydra", cfg.AutoPullHeartToHydra or false, function(v) 
     if _G.Config then
         _G.Config.AutoPullHeartToHydra = v 
         if v then _G.Config.AutoPullHeartToTiki = false end
     end
+    ShowNotification("Kéo Tim Hydra: " .. tostring(v))
 end)
 
 AddButtonToPage(pageTeleport, "Dịch Chuyển Đến Tiki Outpost", function()
     if _G.SenakaCharacterMove and _G.SenakaLocations and _G.Config then
         _G.SenakaCharacterMove(_G.SenakaLocations.TikiBoat, _G.Config.TweenSpeed)
+        ShowNotification("Đang bay đến Tiki Outpost...")
     end
 end)
 
 AddButtonToPage(pageTeleport, "Dịch Chuyển Đến Hydra Island", function()
     if _G.SenakaCharacterMove and _G.SenakaLocations and _G.Config then
         _G.SenakaCharacterMove(_G.SenakaLocations.Hydra, _G.Config.TweenSpeed)
+        ShowNotification("Đang bay đến Hydra Island...")
     end
 end)
 
 AddButtonToPage(pageTeleport, "Dịch Chuyển Đến Spy NPC", function()
     if _G.SenakaCharacterMove and _G.SenakaLocations and _G.Config then
         _G.SenakaCharacterMove(_G.SenakaLocations.SpyNpc, _G.Config.TweenSpeed)
-    end
-end)
-
-local iconInputFrame = Instance.new("Frame")
-iconInputFrame.Parent = pageSettings
-iconInputFrame.BackgroundColor3 = Color3.fromRGB(28, 28, 28)
-iconInputFrame.Size = UDim2.new(1, -10, 0, 50)
-local iconCorner = Instance.new("UICorner")
-iconCorner.CornerRadius = UDim.new(0, 6)
-iconCorner.Parent = iconInputFrame
-
-local iconLabel = Instance.new("TextLabel")
-iconLabel.Parent = iconInputFrame
-iconLabel.BackgroundTransparency = 1
-iconLabel.Position = UDim2.new(0, 10, 0, 2)
-iconLabel.Size = UDim2.new(1, -20, 0, 20)
-iconLabel.Font = Enum.Font.SourceSansBold
-iconLabel.Text = "Đổi Icon ID (RbxAssetId hoặc Link Ảnh):"
-iconLabel.TextColor3 = Color3.fromRGB(240, 240, 240)
-iconLabel.TextSize = 12
-iconLabel.TextXAlignment = Enum.TextXAlignment.Left
-
-local iconTextBox = Instance.new("TextBox")
-iconTextBox.Parent = iconInputFrame
-iconTextBox.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-iconTextBox.Position = UDim2.new(0, 10, 0, 24)
-iconTextBox.Size = UDim2.new(1, -20, 0, 22)
-iconTextBox.Font = Enum.Font.SourceSans
-iconTextBox.Text = (_G.Config and _G.Config.CustomIconId) or "rbxassetid://130284374965787"
-iconTextBox.TextColor3 = Color3.fromRGB(255, 200, 0)
-iconTextBox.TextSize = 11
-local boxC = Instance.new("UICorner")
-boxC.CornerRadius = UDim.new(0, 4)
-boxC.Parent = iconTextBox
-
-iconTextBox.FocusLost:Connect(function(enterPressed)
-    if enterPressed then
-        if _G.Config then _G.Config.CustomIconId = iconTextBox.Text end
-        ToggleBtn.Image = iconTextBox.Text
+        ShowNotification("Đang bay đến Spy NPC...")
     end
 end)
