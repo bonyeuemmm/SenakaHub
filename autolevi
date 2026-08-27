@@ -55,7 +55,7 @@ _G.Config = {
     AutoTravel = "",
     TweenSpeed = 300,
     BoatTweenSpeed = 350,
-    CustomIconId = "rbxassetid://6031094678"
+    CustomIconId = "rbxassetid://130284374965787"
 }
 
 _G.SenakaLocations = {
@@ -448,15 +448,15 @@ task.spawn(function()
 
                 if MasterPlayer and MasterPlayer.Character then
                     local MasterRoot = MasterPlayer.Character:FindFirstChild("HumanoidRootPart")
-                    ipcall(function()
-    if CoreGui:FindFirstChild("BananaHubStyleUI") then
-        CoreGui.BananaHubStyleUI:Destroy()
+                pcall(function()
+    if game:GetService("CoreGui"):FindFirstChild("BananaHubStyleUI") then
+        game:GetService("CoreGui").BananaHubStyleUI:Destroy()
     end
 end)
 
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "BananaHubStyleUI"
-ScreenGui.Parent = CoreGui
+ScreenGui.Parent = game:GetService("CoreGui")
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 ScreenGui.ResetOnSpawn = false
 
