@@ -56,7 +56,7 @@ _G.Config = {
     AutoV3 = false,
     AutoV4 = false,
     AutoAvoidSeaEvent = true,
-    SelectedBoat = "Sloop", 
+    SelectedBoat = "Sloop",
     AutoGetSanguineArt = false,
     AutoTravel = "",
     TweenSpeed = 300,
@@ -65,7 +65,7 @@ _G.Config = {
 _G.SenakaLocations = {
     TikiBoat = CFrame.new(-16234, 25, 416),
     Hydra = CFrame.new(5749, 610, -282),
-    SpyNpc = CLine and CFrame.new(-16110, 20, 450) or CFrame.new(-16110, 20, 450),
+    SpyNpc = CFrame.new(-16110, 20, 450),
     DemonicFumeNpc = CFrame.new(5263, 2, -10410)
 }
 _G.SenakaCharacterMove = function(targetCFrame, speed)
@@ -129,7 +129,7 @@ local function FindAndInteractBoatDealer()
             task.wait(0.5)
         end
     end
-      
+
     local boatName = _G.Config.SelectedBoat or "Sloop"
     pcall(function()
         ReplicatedStorage.Remotes.CommF_:InvokeServer("BuyBoat", boatName)
@@ -496,9 +496,7 @@ btn.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 btn.BorderSizePixel = 0
 btn.Active = true
 btn.Draggable = true
-
 btn.Image = "rbxassetid://89042380317763"
-
 btn.Parent = sg
 
 local corner = Instance.new("UICorner")
