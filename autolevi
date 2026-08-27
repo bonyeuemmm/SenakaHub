@@ -68,6 +68,7 @@ _G.SenakaLocations = {
     SpyNpc = CFrame.new(-16110, 20, 450),
     DemonicFumeNpc = CFrame.new(5263, 2, -10410)
 }
+
 _G.SenakaCharacterMove = function(targetCFrame, speed)
     local char = LocalPlayer.Character
     if not char then return end
@@ -107,9 +108,11 @@ local function GetPlayerBoat()
     return nil
 end
 
+local lastBuyTime = 0
 local function FindAndInteractBoatDealer()
-    local dealerPart = nil
+    if tick() - lastBuyTime < 4 then return end
     
+    local dealerPart = nil
     for _, obj in pairs(workspace:GetDescendants()) do
         if obj:IsA("Model") and (obj.Name:lower():find("boatdealer") or obj.Name:lower():find("dealer") or obj.Name:lower():find("boat")) then
             if obj:FindFirstChild("HumanoidRootPart") then
@@ -125,7 +128,7 @@ local function FindAndInteractBoatDealer()
     if dealerPart and root then
         if (dealerPart.Position - root.Position).Magnitude > 12 then
             _G.SenakaCharacterMove(dealerPart.CFrame * CFrame.new(0, 3, 3), _G.Config.TweenSpeed)
-            task.wait(0.6)
+            task.wait(0.5)
         end
     end
 
@@ -134,11 +137,7 @@ local function FindAndInteractBoatDealer()
     pcall(function()
         ReplicatedStorage.Remotes.CommF_:InvokeServer("BuyBoat", boatName)
     end)
-    task.wait(0.5)
-    
-    pcall(function()
-        ReplicatedStorage.Remotes.CommF_:InvokeServer("BuyBoat", tostring(boatName))
-    end)
+    lastBuyTime = tick()
     task.wait(1.5)
 end
 
@@ -148,11 +147,10 @@ local function SecureBoatPhysics(boatModel)
     processedBoats[boatModel] = true
     
     task.spawn(function()
-        task.wait(0.3)
+        task.wait(0.5)
         pcall(function()
             for _, part in pairs(boatModel:GetDescendants()) do
                 if part:IsA("BasePart") then
-                    part.Anchored = true
                     part.CanCollide = true
                 end
             end
@@ -208,13 +206,25 @@ RunService.Stepped:Connect(function()
         pcall(function()
             local char = LocalPlayer.Character
             local root = char and char:FindFirstChild("HumanoidRootPart")
-            if root then
+            local myBoat = GetPlayerBoat()
+            
+            local isNearBoat = false
+            if myBoat then
+                local boatPart = myBoat.PrimaryPart or myBoat:FindFirstChildWhichIsA("BasePart")
+                if boatPart and root and (root.Position - boatPart.Position).Magnitude < 50 then
+                    isNearBoat = true
+                end
+            end
+
+            if root and not isNearBoat then
                 if root.Position.Y <= 30 and root.Position.Y >= -100 then
                     WaterPlatform.CFrame = CFrame.new(root.Position.X, 3, root.Position.Z)
                     WaterPlatform.CanCollide = true
                 else
                     WaterPlatform.CanCollide = false
                 end
+            else
+                WaterPlatform.CanCollide = false
             end
         end)
     else
@@ -363,10 +373,18 @@ task.spawn(function()
                                     break
                                 end
                             end
+                            
                             if targetSeat then
-                                Root.CFrame = targetSeat.CFrame + Vector3.new(0, 3, 0)
-                                task.wait(0.3)
-                                targetSeat:Sit(Hum)
+                                Root.CFrame = targetSeat.CFrame + Vector3.new(0, 2, 0)
+                                task.wait(0.2)
+                                pcall(function()
+                                    targetSeat:Sit(Hum)
+                                end)
+                            else
+                                local boatPart = myBoat.PrimaryPart or myBoat:FindFirstChildWhichIsA("BasePart")
+                                if boatPart and (Root.Position - boatPart.Position).Magnitude > 15 then
+                                    Root.CFrame = boatPart.CFrame + Vector3.new(0, 5, 0)
+                                end
                             end
                         end
 
