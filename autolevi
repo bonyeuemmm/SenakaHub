@@ -3,6 +3,7 @@ local TweenService = game:GetService("TweenService")
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local Lighting = game:GetService("Lighting")
+local VirtualInputManager = game:GetService("VirtualInputManager")
 local LocalPlayer = Players.LocalPlayer
 
 task.spawn(function()
@@ -46,8 +47,11 @@ _G.Config = {
     AutoAvoidSeaEvent = true,
     SelectedBoat = "Dinghy",
     AutoGetSanguineArt = false,
+    AutoPullHeartToTiki = false,
+    AutoPullHeartToHydra = false,
     AutoTravel = "",
     TweenSpeed = 300,
+    BoatTweenSpeed = 350,
 }
 
 _G.SenakaLocations = {
@@ -172,7 +176,7 @@ end
 
 local WaterPlatform = Instance.new("Part")
 WaterPlatform.Name = "SenakaWaterSurfacePlatform"
-WaterPlatform.Size = Vector3.new(35, 1, 35)
+WaterPlatform.Size = Vector3.new(40, 1.5, 40)
 WaterPlatform.Anchored = true
 WaterPlatform.Transparency = 1
 WaterPlatform.CanCollide = false
@@ -186,8 +190,8 @@ RunService.RenderStepped:Connect(function()
             local hum = char and char:FindFirstChild("Humanoid")
             
             if root and hum and not hum.SeatPart then
-                if root.Position.Y <= 15 and root.Position.Y >= -100 then
-                    WaterPlatform.CFrame = CFrame.new(root.Position.X, 2.5, root.Position.Z)
+                if root.Position.Y <= 15 and root.Position.Y >= -150 then
+                    WaterPlatform.CFrame = CFrame.new(root.Position.X, 2.2, root.Position.Z)
                     WaterPlatform.CanCollide = true
                 else
                     WaterPlatform.CanCollide = false
@@ -216,11 +220,10 @@ task.spawn(function()
     while task.wait(1) do 
         if _G.Config.AutoV3 then 
             pcall(function() 
-                local vim = game:GetService("VirtualInputManager")
-                if vim then
-                    vim:SendKeyEvent(true, Enum.KeyCode.T, false, game)
+                if VirtualInputManager then
+                    VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.T, false, game)
                     task.wait(0.05)
-                    vim:SendKeyEvent(false, Enum.KeyCode.T, false, game)
+                    VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.T, false, game)
                 end
             end) 
         end 
@@ -255,6 +258,22 @@ task.spawn(function()
                     end
                 end
             end)
+        end
+    end
+end)
+
+task.spawn(function()
+    while task.wait(0.5) do
+        local Heart = workspace:FindFirstChild("LeviathanHeart")
+        local Root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+        if Heart and Root then
+            if _G.Config.AutoPullHeartToTiki then
+                Heart:PivotTo(_G.SenakaLocations.TikiBoat + Vector3.new(0, 10, 0))
+                pcall(function() ReplicatedStorage.Remotes.CommF_:InvokeServer("PullHeart") end)
+            elseif _G.Config.AutoPullHeartToHydra then
+                Heart:PivotTo(_G.SenakaLocations.Hydra + Vector3.new(0, 10, 0))
+                pcall(function() ReplicatedStorage.Remotes.CommF_:InvokeServer("PullHeart") end)
+            end
         end
     end
 end)
@@ -296,11 +315,10 @@ task.spawn(function()
             if enemyTarget then
                 Root.CFrame = enemyTarget.CFrame * CFrame.new(0, 5, 3)
                 pcall(function()
-                    local vim = game:GetService("VirtualInputManager")
-                    if vim then
-                        vim:SendMouseButtonEvent(0, 0, 0, true, game, 1)
+                    if VirtualInputManager then
+                        VirtualInputManager:SendMouseButtonEvent(0, 0, 0, true, game, 1)
                         task.wait(0.05)
-                        vim:SendMouseButtonEvent(0, 0, 0, false, game, 1)
+                        VirtualInputManager:SendMouseButtonEvent(0, 0, 0, false, game, 1)
                     end
                 end)
             end
@@ -372,14 +390,14 @@ task.spawn(function()
                                         
                                         if boatFlightState == "Idle" then
                                             local highTarget = CFrame.new(boatPrimary.Position.X, 150, boatPrimary.Position.Z)
-                                            local upTween = TweenService:Create(boatPrimary, TweenInfo.new(3, Enum.EasingStyle.Linear), {CFrame = highTarget})
+                                            local upTween = TweenService:Create(boatPrimary, TweenInfo.new(1.5, Enum.EasingStyle.Linear), {CFrame = highTarget})
                                             upTween:Play()
                                             upTween.Completed:Wait()
                                             boatFlightState = "FlyingToSea"
                                         elseif boatFlightState == "FlyingToSea" then
                                             if distanceToSea > 300 then
                                                 local highSeaTarget = CFrame.new(_G.SenakaLocations.SeaSearchCenter.Position.X, 150, _G.SenakaLocations.SeaSearchCenter.Position.Z)
-                                                local duration = (boatPrimary.Position - highSeaTarget.Position).Magnitude / _G.Config.TweenSpeed
+                                                local duration = (boatPrimary.Position - highSeaTarget.Position).Magnitude / _G.Config.BoatTweenSpeed
                                                 local seaTween = TweenService:Create(boatPrimary, TweenInfo.new(duration, Enum.EasingStyle.Linear), {CFrame = highSeaTarget})
                                                 seaTween:Play()
                                                 seaTween.Completed:Wait()
@@ -387,7 +405,7 @@ task.spawn(function()
                                             boatFlightState = "Lowering"
                                         elseif boatFlightState == "Lowering" then
                                             local lowSeaTarget = CFrame.new(_G.SenakaLocations.SeaSearchCenter.Position.X, 5, _G.SenakaLocations.SeaSearchCenter.Position.Z)
-                                            local downTween = TweenService:Create(boatPrimary, TweenInfo.new(2, Enum.EasingStyle.Linear), {CFrame = lowSeaTarget})
+                                            local downTween = TweenService:Create(boatPrimary, TweenInfo.new(1, Enum.EasingStyle.Linear), {CFrame = lowSeaTarget})
                                             downTween:Play()
                                             downTween.Completed:Wait()
                                             boatFlightState = "Searching"
@@ -429,33 +447,13 @@ task.spawn(function()
                     if MasterRoot and not Hum.SeatPart then
                         local TargetSeat = nil
                         for _, obj in pairs(workspace:GetDescendants()) do
-                            if (obj:IsA("VehicleSeat") or obj:IsA("Seat")) and not obj.Occupant then
-                                if (obj.Position - MasterRoot.Position).Magnitude < 100 then
-                                    TargetSeat = obj
-                                    break
-                                end
-                            end
-                        end
-                        if TargetSeat then
-                            Hum.PlatformStand = false
-                            Root.CFrame = TargetSeat.CFrame
-                            task.wait(0.3)
-                            TargetSeat:Sit(Hum)
-                        elseif (Root.Position - MasterRoot.Position).Magnitude > 20 then
-                            _G.SenakaCharacterMove(MasterRoot.CFrame * CFrame.new(0, 3, -3), _G.Config.TweenSpeed)
-                        end
-                    end
-                end
-            end
-        end
-    end
-end)
+                            if (obj:IsA("VehicleSeat") or obj:IsA("Seat")) and not obj.Occup
 local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
 local Window = Fluent:CreateWindow({
     Title = "Senaka Hub - Leviathan",
     SubTitle = "Optimized Edition",
     TabWidth = 140,
-    Size = UDim2.fromOffset(500, 380),
+    Size = UDim2.fromOffset(480, 400),
     Acrylic = true,
     Theme = "Dark",
     MinimizeKey = Enum.KeyCode.RightControl
@@ -463,6 +461,7 @@ local Window = Fluent:CreateWindow({
 
 local Tabs = {
     Main = Window:AddTab({ Title = "Main", Icon = "home" }),
+    Teleport = Window:AddTab({ Title = "Teleport", Icon = "map" }),
     Settings = Window:AddTab({ Title = "Settings", Icon = "settings" })
 }
 
@@ -521,6 +520,24 @@ Tabs.Main:AddToggle("AutoSanguineToggle", {
     Callback = function(v) _G.Config.AutoGetSanguineArt = v end
 })
 
+Tabs.Main:AddToggle("AutoPullTikiToggle", {
+    Title = "Kéo Tim Về Tiki",
+    Default = _G.Config.AutoPullHeartToTiki,
+    Callback = function(v) 
+        _G.Config.AutoPullHeartToTiki = v 
+        if v then _G.Config.AutoPullHeartToHydra = false end
+    end
+})
+
+Tabs.Main:AddToggle("AutoPullHydraToggle", {
+    Title = "Kéo Tim Về Hydra",
+    Default = _G.Config.AutoPullHeartToHydra,
+    Callback = function(v) 
+        _G.Config.AutoPullHeartToHydra = v 
+        if v then _G.Config.AutoPullHeartToTiki = false end
+    end
+})
+
 Tabs.Main:AddDropdown("BoatDropdown", {
     Title = "Chọn Loại Thuyền Mua",
     Values = {"Dinghy", "Sloop", "Longship"},
@@ -528,9 +545,40 @@ Tabs.Main:AddDropdown("BoatDropdown", {
     Callback = function(v) _G.Config.SelectedBoat = v end
 })
 
+Tabs.Teleport:AddButton({
+    Title = "Dịch Chuyển Đến Tiki Outpost",
+    Callback = function()
+        _G.SenakaCharacterMove(_G.SenakaLocations.TikiBoat, _G.Config.TweenSpeed)
+    end
+})
+
+Tabs.Teleport:AddButton({
+    Title = "Dịch Chuyển Đến Hydra Island",
+    Callback = function()
+        _G.SenakaCharacterMove(_G.SenakaLocations.Hydra, _G.Config.TweenSpeed)
+    end
+})
+
+Tabs.Teleport:AddButton({
+    Title = "Dịch Chuyển Đến Spy NPC",
+    Callback = function()
+        _G.SenakaCharacterMove(_G.SenakaLocations.SpyNpc, _G.Config.TweenSpeed)
+    end
+})
+
+Tabs.Settings:AddSlider("BoatSpeedSlider", {
+    Title = "Tốc Độ Thuyền Bay",
+    Description = "Mặc định 350, tối đa 500",
+    Default = _G.Config.BoatTweenSpeed,
+    Min = 100,
+    Max = 500,
+    Rounding = 0,
+    Callback = function(v) _G.Config.BoatTweenSpeed = v end
+})
+
 Tabs.Settings:AddSlider("TweenSpeedSlider", {
-    Title = "Tốc Độ Di Chuyển (Tween)",
-    Description = "Chỉnh tốc độ bay/di chuyển",
+    Title = "Tốc Độ Di Chuyển Nhân Vật",
+    Description = "Chỉnh tốc độ bay/di chuyển cá nhân",
     Default = _G.Config.TweenSpeed,
     Min = 100,
     Max = 500,
@@ -540,6 +588,6 @@ Tabs.Settings:AddSlider("TweenSpeedSlider", {
 
 Fluent:Notify({
     Title = "Senaka Hub",
-    Content = "Đã cập nhật giao diện thu gọn và fix lỗi hoàn tất!",
+    Content = "Đã tải thành công script và thêm nút chỉnh tốc độ thuyền bay!",
     Duration = 5
 })
