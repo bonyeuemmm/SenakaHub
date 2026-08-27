@@ -11,8 +11,8 @@ task.spawn(function()
 end)
 
 _G.Config = {
-    IsMaster = false, 
-    IsSlave = false, 
+    IsMaster = false,
+    IsSlave = false,
     MasterName = "bonbicuttay_999",
     WaterWalk = true,
     AutoBuso = true,
@@ -171,11 +171,27 @@ end)
 task.spawn(function()
     while task.wait(1) do
         pcall(function()
-            if _G.Config.AutoGetSanguineArt then
-                local args = {"BuySanguineArt", true}
-                ReplicatedStorage.Remotes.CommF_:InvokeServer(unpack(args))
+            if _G.Config.AutoV3 then
+                local char = LocalPlayer.Character
+                local abilityName = char and char:FindFirstChild("AbilityName")
+                if abilityName then
+                    VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.T, false, game)
+                    VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.T, false, game)
+                end
             end
-            
+
+            if _G.Config.AutoV4 then
+                local char = LocalPlayer.Character
+                if char and char:FindFirstChild("Transformation") then
+                    VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Y, false, game)
+                    VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Y, false, game)
+                end
+            end
+
+            if _G.Config.AutoGetSanguineArt then
+                ReplicatedStorage.Remotes.CommF_:InvokeServer("BuySanguineArt", true)
+            end
+
             if _G.Config.AutoPullHeartToTiki then
                 _G.SenakaCharacterMove(_G.SenakaLocations.TikiBoat, _G.Config.TweenSpeed)
             elseif _G.Config.AutoPullHeartToHydra then
@@ -186,21 +202,21 @@ task.spawn(function()
 end)
 pcall(function()
     local coreGui = game:GetService("CoreGui")
-    if coreGui:FindFirstChild("SenakaMobileHubFinal") then
-        coreGui.SenakaMobileHubFinal:Destroy()
+    if coreGui:FindFirstChild("SenakaMobileHubOriginal") then
+        coreGui.SenakaMobileHubOriginal:Destroy()
     end
 
     local ScreenGui = Instance.new("ScreenGui")
-    ScreenGui.Name = "SenakaMobileHubFinal"
+    ScreenGui.Name = "SenakaMobileHubOriginal"
     ScreenGui.Parent = coreGui
     ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
     local MainFrame = Instance.new("Frame")
     MainFrame.Name = "MainFrame"
     MainFrame.Parent = ScreenGui
-    MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-    MainFrame.Position = UDim2.new(0.5, -230, 0.5, -210)
-    MainFrame.Size = UDim2.new(0, 460, 0, 420)
+    MainFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
+    MainFrame.Position = UDim2.new(0.5, -240, 0.5, -220)
+    MainFrame.Size = UDim2.new(0, 480, 0, 440)
     MainFrame.Active = true
     MainFrame.Draggable = true
 
@@ -210,10 +226,10 @@ pcall(function()
 
     local TitleLabel = Instance.new("TextLabel")
     TitleLabel.Parent = MainFrame
-    TitleLabel.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+    TitleLabel.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
     TitleLabel.Size = UDim2.new(1, 0, 0, 45)
     TitleLabel.Font = Enum.Font.SourceSansBold
-    TitleLabel.Text = "  Senaka Hub - Full Features (Delta X Fixed)"
+    TitleLabel.Text = "  Senaka Hub - Full Original Features"
     TitleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
     TitleLabel.TextSize = 16
     TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
@@ -225,11 +241,11 @@ pcall(function()
     local ScrollingFrame = Instance.new("ScrollingFrame")
     ScrollingFrame.Parent = MainFrame
     ScrollingFrame.Active = true
-    ScrollingFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+    ScrollingFrame.BackgroundColor3 = Color3.fromRGB(22, 22, 22)
     ScrollingFrame.BackgroundTransparency = 1
     ScrollingFrame.Position = UDim2.new(0, 10, 0, 55)
     ScrollingFrame.Size = UDim2.new(1, -20, 1, -65)
-    ScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, 450)
+    ScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, 600)
     ScrollingFrame.ScrollBarThickness = 6
 
     local UIListLayout = Instance.new("UIListLayout")
@@ -240,8 +256,8 @@ pcall(function()
     local function CreateButton(text, defaultState, callback)
         local btn = Instance.new("TextButton")
         btn.Parent = ScrollingFrame
-        btn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-        btn.Size = UDim2.new(1, 0, 0, 38)
+        btn.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+        btn.Size = UDim2.new(1, 0, 0, 40)
         btn.Font = Enum.Font.SourceSansBold
         btn.Text = text .. ": " .. (defaultState and "BẬT" or "TẮT")
         btn.TextColor3 = defaultState and Color3.fromRGB(100, 255, 100) or Color3.fromRGB(255, 100, 100)
@@ -264,8 +280,8 @@ pcall(function()
     local function CreateActionBtn(text, callback)
         local btn = Instance.new("TextButton")
         btn.Parent = ScrollingFrame
-        btn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-        btn.Size = UDim2.new(1, 0, 0, 38)
+        btn.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+        btn.Size = UDim2.new(1, 0, 0, 40)
         btn.Font = Enum.Font.SourceSansBold
         btn.Text = text
         btn.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -280,17 +296,21 @@ pcall(function()
     end
 
     CreateButton("Role Master", _G.Config.IsMaster, function(val) _G.Config.IsMaster = val end)
+    CreateButton("Role Slave", _G.Config.IsSlave, function(val) _G.Config.IsSlave = val end)
     CreateButton("Water Walk", _G.Config.WaterWalk, function(val) _G.Config.WaterWalk = val end)
     CreateButton("Auto Buso", _G.Config.AutoBuso, function(val) _G.Config.AutoBuso = val end)
+    CreateButton("Auto V3", _G.Config.AutoV3, function(val) _G.Config.AutoV3 = val end)
+    CreateButton("Auto V4", _G.Config.AutoV4, function(val) _G.Config.AutoV4 = val end)
+    CreateButton("Auto Avoid Sea Event", _G.Config.AutoAvoidSeaEvent, function(val) _G.Config.AutoAvoidSeaEvent = val end)
     CreateButton("Auto Sanguine Art", _G.Config.AutoGetSanguineArt, function(val) _G.Config.AutoGetSanguineArt = val end)
     CreateButton("Auto Pull Heart To Tiki", _G.Config.AutoPullHeartToTiki, function(val) _G.Config.AutoPullHeartToTiki = val end)
     CreateButton("Auto Pull Heart To Hydra", _G.Config.AutoPullHeartToHydra, function(val) _G.Config.AutoPullHeartToHydra = val end)
 
-    CreateActionBtn("Dịch Chuyển Tiki Outpost", function()
+    CreateActionBtn("Dịch Chuyển Đến Tiki Outpost", function()
         _G.SenakaCharacterMove(_G.SenakaLocations.TikiBoat, _G.Config.TweenSpeed)
     end)
 
-    CreateActionBtn("Dịch Chuyển Hydra Island", function()
+    CreateActionBtn("Dịch Chuyển Đến Hydra Island", function()
         _G.SenakaCharacterMove(_G.SenakaLocations.Hydra, _G.Config.TweenSpeed)
     end)
 
@@ -300,7 +320,7 @@ pcall(function()
 
     local MinimizeBtn = Instance.new("TextButton")
     MinimizeBtn.Parent = ScreenGui
-    MinimizeBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    MinimizeBtn.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
     MinimizeBtn.Position = UDim2.new(0, 20, 0, 60)
     MinimizeBtn.Size = UDim2.new(0, 110, 0, 35)
     MinimizeBtn.Font = Enum.Font.SourceSansBold
