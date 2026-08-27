@@ -186,7 +186,7 @@ end
 
 local WaterPlatform = Instance.new("Part")
 WaterPlatform.Name = "SenakaWaterSurfacePlatform"
-WaterPlatform.Size = Vector3.new(40, 1.5, 40)
+WaterPlatform.Size = Vector3.new(100, 1, 100)
 WaterPlatform.Anchored = true
 WaterPlatform.Transparency = 1
 WaterPlatform.CanCollide = false
@@ -200,8 +200,8 @@ RunService.RenderStepped:Connect(function()
             local hum = char and char:FindFirstChild("Humanoid")
             
             if root and hum and not hum.SeatPart then
-                if root.Position.Y <= 15 and root.Position.Y >= -150 then
-                    WaterPlatform.CFrame = CFrame.new(root.Position.X, 2.2, root.Position.Z)
+                if root.Position.Y <= 10 and root.Position.Y >= -30 then
+                    WaterPlatform.CFrame = CFrame.new(root.Position.X, -2.5, root.Position.Z)
                     WaterPlatform.CanCollide = true
                 else
                     WaterPlatform.CanCollide = false
@@ -227,14 +227,10 @@ task.spawn(function()
 end)
 
 task.spawn(function() 
-    while task.wait(1) do 
+    while task.wait(0.5) do 
         if _G.Config.AutoV3 then 
             pcall(function() 
-                if VirtualInputManager then
-                    VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.T, false, game)
-                    task.wait(0.05)
-                    VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.T, false, game)
-                end
+                ReplicatedStorage.Remotes.CommF_:InvokeServer("ActivateAbility")
             end) 
         end 
     end 
