@@ -346,7 +346,7 @@ task.spawn(function()
                 
                 local distToTiki = (Root.Position - _G.SenakaLocations.TikiBoat.Position).Magnitude
                 
-                if distToTiki > 50 and not GetPlayerBoat() and not IceIsland then
+                if distToTiki > 150 and not GetPlayerBoat() and not IceIsland then
                     _G.SenakaCharacterMove(_G.SenakaLocations.TikiBoat, _G.Config.TweenSpeed)
                 else
                     local myBoat = GetPlayerBoat()
@@ -365,7 +365,7 @@ task.spawn(function()
                             end
                             if targetSeat then
                                 Root.CFrame = targetSeat.CFrame + Vector3.new(0, 3, 0)
-                                task.wait(0.2)
+                                task.wait(0.3)
                                 targetSeat:Sit(Hum)
                             end
                         end
