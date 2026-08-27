@@ -84,7 +84,6 @@ _G.SenakaCharacterMove = function(targetCFrame, speed)
     hum.PlatformStand = false
 end
 
--- TỐI ƯU TÌM THUYỀN CHO BLOX FRUITS
 local function GetPlayerBoat()
     local boatsFolder = workspace:FindFirstChild("Boats")
     if boatsFolder then
@@ -99,10 +98,9 @@ local function GetPlayerBoat()
     return nil
 end
 
--- TĂNG COOLDOWN ĐỂ CHỐNG SPAM MUA THUYỀN
 local lastBuyTime = 0
 local function FindAndInteractBoatDealer()
-    if tick() - lastBuyTime < 10 then return end -- Đợi 10 giây giữa các lần mua
+    if tick() - lastBuyTime < 10 then return end
     
     local dealerPart = nil
     for _, obj in pairs(workspace:GetDescendants()) do
@@ -134,11 +132,9 @@ local function FindAndInteractBoatDealer()
         end
     end
 
-    pcall(function()
-        ReplicatedStorage.Remotes.CommF_:InvokeServer("BuyBoat", _G.Config.SelectedBoat or "Dinghy")
-    end)
+    pcall(function() ReplicatedStorage.Remotes.CommF_:InvokeServer("BuyBoat", _G.Config.SelectedBoat or "Dinghy") end)
     lastBuyTime = tick()
-    task.wait(3) -- Dừng script 3 giây chờ thuyền load ra
+    task.wait(3)
 end
 
 local processedBoats = {}
@@ -186,15 +182,9 @@ RunService.Stepped:Connect(function()
         pcall(function()
             local char = LocalPlayer.Character
             local root = char and char:FindFirstChild("HumanoidRootPart")
-            local myBoat = GetPlayerBoat()
-            local isNearBoat = false
-            if myBoat then
-                local boatPart = myBoat.PrimaryPart or myBoat:FindFirstChildWhichIsA("BasePart")
-                if boatPart and root and (root.Position - boatPart.Position).Magnitude < 50 then
-                    isNearBoat = true
-                end
-            end
-            if root and not isNearBoat then
+            local hum = char and char:FindFirstChild("Humanoid")
+            
+            if root and hum and not hum.SeatPart then
                 if root.Position.Y <= 30 and root.Position.Y >= -100 then
                     WaterPlatform.CFrame = CFrame.new(root.Position.X, 3, root.Position.Z)
                     WaterPlatform.CanCollide = true
@@ -221,17 +211,8 @@ task.spawn(function()
     end
 end)
 
-task.spawn(function()
-    while task.wait(1.2) do
-        if _G.Config.AutoV3 then pcall(function() ReplicatedStorage.Remotes.CommF_:InvokeServer("ProccessAbillity") end) end
-    end
-end)
-
-task.spawn(function()
-    while task.wait(0.8) do
-        if _G.Config.AutoV4 then pcall(function() ReplicatedStorage.Remotes.CommF_:InvokeServer("ActivateRaceTransformation") end) end
-    end
-end)
+task.spawn(function() while task.wait(1.2) do if _G.Config.AutoV3 then pcall(function() ReplicatedStorage.Remotes.CommF_:InvokeServer("ProccessAbillity") end) end end end)
+task.spawn(function() while task.wait(0.8) do if _G.Config.AutoV4 then pcall(function() ReplicatedStorage.Remotes.CommF_:InvokeServer("ActivateRaceTransformation") end) end end end)
 
 task.spawn(function()
     while task.wait(0.3) do
@@ -266,12 +247,41 @@ task.spawn(function()
     end
 end)
 
--- VÒNG LẶP MASTER / SLAVE CHÍNH
 task.spawn(function()
     while task.wait(0.5) do
         local Char = LocalPlayer.Character
         local Hum = Char and Char:FindFirstChild("Humanoid")
         local Root = Char and Char:FindFirstChild("HumanoidRootPart")
+
+        if _G.Config.AutoGetSanguineArt and Root and Hum and Hum.Health > 0 then
+            local enemyTarget = nil
+            if workspace:FindFirstChild("Enemies") then
+                for _, mob in pairs(workspace.Enemies:GetChildren()) do
+                    local mobRoot = mob:FindFirstChild("HumanoidRootPart")
+                    local mobHum = mob:FindFirstChild("Humanoid")
+                    if mobRoot and mobHum and mobHum.Health > 0 then
+                        if (mob.Name:find("Vampire") or mob.Name:find("TerrorShark") or mob.Name:find("FishTail") or mob.Name:find("Demonic")) then
+                            if (mobRoot.Position - Root.Position).Magnitude < 2000 then
+                                enemyTarget = mobRoot
+                                break
+                            end
+                        end
+                    end
+                end
+            end
+
+            if enemyTarget then
+                Root.CFrame = enemyTarget.CFrame * CFrame.new(0, 5, 3)
+                pcall(function()
+                    local vim = game:GetService("VirtualInputManager")
+                    if vim then
+                        vim:SendMouseButtonEvent(0, 0, 0, true, game, 1)
+                        task.wait(0.05)
+                        vim:SendMouseButtonEvent(0, 0, 0, false, game, 1)
+                    end
+                end)
+            end
+        end
 
         if not _G.Config.AutoGetSanguineArt then
             if _G.Config.IsMaster and Root and Hum and Hum.Health > 0 then
@@ -288,17 +298,25 @@ task.spawn(function()
                     else
                         SecureBoatPhysics(myBoat)
                         
-                        -- LOGIC NGỒI GHẾ CHUẨN XÁC
                         if not Hum.SeatPart then
                             local targetSeat = nil
                             for _, d in pairs(myBoat:GetDescendants()) do
-                                if (d:IsA("VehicleSeat") or d:IsA("Seat")) and not d.Occupant then
+                                if d:IsA("VehicleSeat") and not d.Occupant then
                                     targetSeat = d
                                     break
                                 end
                             end
+                            if not targetSeat then
+                                for _, d in pairs(myBoat:GetDescendants()) do
+                                    if d:IsA("Seat") and not d.Occupant then
+                                        targetSeat = d
+                                        break
+                                    end
+                                end
+                            end
+
                             if targetSeat then
-                                Hum.PlatformStand = false -- Tắt platform stand để Sit() hoạt động
+                                Hum.PlatformStand = false
                                 Root.CFrame = targetSeat.CFrame
                                 task.wait(0.3)
                                 pcall(function() targetSeat:Sit(Hum) end)
@@ -308,38 +326,29 @@ task.spawn(function()
                                     Root.CFrame = boatPart.CFrame + Vector3.new(0, 5, 0)
                                 end
                             end
-                        end
-
-                        if CountPlayersOnBoat(myBoat) >= 5 then
-                            if IceIsland then
-                                local islandPart = IceIsland:FindFirstChild("PrimaryPart") or IceIsland:FindFirstChildWhichIsA("BasePart")
-                                if islandPart then
-                                    if (Root.Position - islandPart.Position).Magnitude > 150 then
-                                        _G.SenakaCharacterMove(islandPart.CFrame * CFrame.new(0, 20, 0), _G.Config.TweenSpeed)
-                                    else
-                                        _G.SenakaCharacterMove(_G.SenakaLocations.SpyNpc, _G.Config.TweenSpeed)
-                                        task.wait(0.5)
-                                        pcall(function() ReplicatedStorage.Remotes.CommF_:InvokeServer("FindLeviathan") end)
+                        else
+                            if CountPlayersOnBoat(myBoat) >= 5 then
+                                if IceIsland then
+                                    local islandPart = IceIsland:FindFirstChild("PrimaryPart") or IceIsland:FindFirstChildWhichIsA("BasePart")
+                                    if islandPart then
+                                        if (Root.Position - islandPart.Position).Magnitude > 150 then
+                                            _G.SenakaCharacterMove(islandPart.CFrame * CFrame.new(0, 20, 0), _G.Config.TweenSpeed)
+                                        else
+                                            _G.SenakaCharacterMove(_G.SenakaLocations.SpyNpc, _G.Config.TweenSpeed)
+                                            task.wait(0.5)
+                                            pcall(function() ReplicatedStorage.Remotes.CommF_:InvokeServer("FindLeviathan") end)
+                                        end
                                     end
-                                end
-                                if Heart then pcall(function() ReplicatedStorage.Remotes.CommF_:InvokeServer("PullHeart") end) end
-                            else
-                                if (Root.Position - _G.SenakaLocations.SpyNpc.Position).Magnitude > 30 then
-                                    _G.SenakaCharacterMove(_G.SenakaLocations.SpyNpc, _G.Config.TweenSpeed)
+                                    if Heart then pcall(function() ReplicatedStorage.Remotes.CommF_:InvokeServer("PullHeart") end) end
                                 else
                                     pcall(function() ReplicatedStorage.Remotes.CommF_:InvokeServer("FindLeviathan") end)
                                 end
-                            end
-                        else
-                            if (Root.Position - _G.SenakaLocations.SpyNpc.Position).Magnitude > 40 then
-                                _G.SenakaCharacterMove(_G.SenakaLocations.SpyNpc, _G.Config.TweenSpeed)
                             end
                         end
                     end
                 end
             end
 
-            -- SLAVE
             if _G.Config.IsSlave and Root and Hum and Hum.Health > 0 then
                 local MasterPlayer = nil
                 for _, p in pairs(Players:GetPlayers()) do
@@ -521,7 +530,7 @@ task.spawn(function()
 
     Fluent:Notify({
         Title = "Senaka Hub",
-        Content = "Đã tải giao diện thành công!",
+        Content = "Đã tải thành công",
         Duration = 5
     })
 end)
