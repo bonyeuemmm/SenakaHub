@@ -447,14 +447,41 @@ task.spawn(function()
                     if MasterRoot and not Hum.SeatPart then
                         local TargetSeat = nil
                         for _, obj in pairs(workspace:GetDescendants()) do
-                            if (obj:IsA("VehicleSeat") or obj:IsA("Seat")) and not obj.Occup
-local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
+                            if (obj:IsA("VehicleSeat") or obj:IsA("Seat")) and not obj.Occupant then
+                                if (obj.Position - MasterRoot.Position).Magnitude < 100 then
+                                    TargetSeat = obj
+                                    break
+                                end
+                            end
+                        end
+                        if TargetSeat then
+                            Hum.PlatformStand = false
+                            Root.CFrame = TargetSeat.CFrame
+                            task.wait(0.3)
+                            TargetSeat:Sit(Hum)
+                        elseif (Root.Position - MasterRoot.Position).Magnitude > 20 then
+                            _G.SenakaCharacterMove(MasterRoot.CFrame * CFrame.new(0, 3, -3), _G.Config.TweenSpeed)
+                        end
+                    end
+                end
+            end
+        end
+    end
+end)
+local success, Fluent = pcall(function()
+    return loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
+end)
+
+if not success or not Fluent then
+    Fluent = loadstring(game:HttpGet("https://raw.githubusercontent.com/deeeage/Roblox-UI-Libraries/main/Fluent/Fluent.lua"))()
+end
+
 local Window = Fluent:CreateWindow({
     Title = "Senaka Hub - Leviathan",
     SubTitle = "Optimized Edition",
     TabWidth = 140,
     Size = UDim2.fromOffset(480, 400),
-    Acrylic = true,
+    Acrylic = false,
     Theme = "Dark",
     MinimizeKey = Enum.KeyCode.RightControl
 })
@@ -588,6 +615,6 @@ Tabs.Settings:AddSlider("TweenSpeedSlider", {
 
 Fluent:Notify({
     Title = "Senaka Hub",
-    Content = "Đã tải thành công script và thêm nút chỉnh tốc độ thuyền bay!",
+    Content = "Đã tải thành công giao diện và thiết lập tốc độ!",
     Duration = 5
 })
