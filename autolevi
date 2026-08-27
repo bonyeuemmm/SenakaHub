@@ -9,19 +9,21 @@ local LocalPlayer = Players.LocalPlayer
 task.spawn(function()
     pcall(function() ReplicatedStorage.Remotes.CommF_:InvokeServer("SetTeam", "Marines") end)
     pcall(function()
-        local rawMeta = getrawmetatable(game)
-        if setreadonly then setreadonly(rawMeta, false) end
-        local oldNamecall = rawMeta.__namecall
-        rawMeta.__namecall = newcclosure(function(self, ...)
-            local method = getnamecallmethod()
-            if method == "FireServer" or method == "InvokeServer" then
-                local nameStr = tostring(self)
-                if nameStr:find("Ban") or nameStr:find("Check") or nameStr:find("Admin") or nameStr:find("Detection") then return nil end
-            end
-            if method == "Kick" or method == "kick" then return nil end
-            return oldNamecall(self, ...)
-        end)
-        if setreadonly then setreadonly(rawMeta, true) end
+        local rawMeta = getrawmetatable and getrawmetatable(game) or debug and debug.getmetatable and debug.getmetatable(game)
+        if rawMeta then
+            if setreadonly then setreadonly(rawMeta, false) end
+            local oldNamecall = rawMeta.__namecall
+            rawMeta.__namecall = newcclosure(function(self, ...)
+                local method = getnamecallmethod()
+                if method == "FireServer" or method == "InvokeServer" then
+                    local nameStr = tostring(self)
+                    if nameStr:find("Ban") or nameStr:find("Check") or nameStr:find("Admin") or nameStr:find("Detection") then return nil end
+                end
+                if method == "Kick" or method == "kick" then return nil end
+                return oldNamecall(self, ...)
+            end)
+            if setreadonly then setreadonly(rawMeta, true) end
+        end
     end)
 end)
 
@@ -446,29 +448,7 @@ task.spawn(function()
                     local MasterRoot = MasterPlayer.Character:FindFirstChild("HumanoidRootPart")
                     if MasterRoot and not Hum.SeatPart then
                         local TargetSeat = nil
-                        for _, obj in pairs(workspace:GetDescendants()) do
-                            if (obj:IsA("VehicleSeat") or obj:IsA("Seat")) and not obj.Occupant then
-                                if (obj.Position - MasterRoot.Position).Magnitude < 100 then
-                                    TargetSeat = obj
-                                    break
-                                end
-                            end
-                        end
-                        if TargetSeat then
-                            Hum.PlatformStand = false
-                            Root.CFrame = TargetSeat.CFrame
-                            task.wait(0.3)
-                            TargetSeat:Sit(Hum)
-                        elseif (Root.Position - MasterRoot.Position).Magnitude > 20 then
-                            _G.SenakaCharacterMove(MasterRoot.CFrame * CFrame.new(0, 3, -3), _G.Config.TweenSpeed)
-                        end
-                    end
-                end
-            end
-        end
-    end
-end)
-local success, Fluent = pcall(function()
+  local success, Fluent = pcall(function()
     return loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
 end)
 
@@ -478,7 +458,7 @@ end
 
 local Window = Fluent:CreateWindow({
     Title = "Senaka Hub - Leviathan",
-    SubTitle = "Optimized Edition",
+    SubTitle = "Mobile Edition",
     TabWidth = 140,
     Size = UDim2.fromOffset(480, 400),
     Acrylic = false,
@@ -613,8 +593,42 @@ Tabs.Settings:AddSlider("TweenSpeedSlider", {
     Callback = function(v) _G.Config.TweenSpeed = v end
 })
 
+pcall(function()
+    local coreGui = game:GetService("CoreGui")
+    if coreGui:FindFirstChild("SenakaToggleBtn") then
+        coreGui.SenakaToggleBtn:Destroy()
+    end
+
+    local ScreenGui = Instance.new("ScreenGui")
+    ScreenGui.Name = "SenakaToggleBtn"
+    ScreenGui.Parent = coreGui
+    ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+    local ToggleButton = Instance.new("TextButton")
+    ToggleButton.Name = "ToggleButton"
+    ToggleButton.Parent = ScreenGui
+    ToggleButton.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    ToggleButton.BorderColor3 = Color3.fromRGB(80, 80, 80)
+    ToggleButton.Position = UDim2.new(0, 20, 0, 150)
+    ToggleButton.Size = UDim2.new(0, 110, 0, 40)
+    ToggleButton.Font = Enum.Font.SourceSansBold
+    ToggleButton.Text = "Ẩn / Hiện Menu"
+    ToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    ToggleButton.TextSize = 14
+
+    local UICorner = Instance.new("UICorner")
+    UICorner.CornerRadius = UDim.new(0, 8)
+    UICorner.Parent = ToggleButton
+
+    local menuVisible = true
+    ToggleButton.MouseButton1Click:Connect(function()
+        menuVisible = not menuVisible
+        Window:Minimize()
+    end)
+end)
+
 Fluent:Notify({
     Title = "Senaka Hub",
-    Content = "Đã tải thành công giao diện và thiết lập tốc độ!",
+    Content = "Tải thành công trên mọi Executor điện thoại!",
     Duration = 5
 })
