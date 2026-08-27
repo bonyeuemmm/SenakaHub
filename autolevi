@@ -6,9 +6,7 @@ local Lighting = game:GetService("Lighting")
 local LocalPlayer = Players.LocalPlayer
 
 task.spawn(function()
-    pcall(function()
-        ReplicatedStorage.Remotes.CommF_:InvokeServer("SetTeam", "Marines")
-    end)
+    pcall(function() ReplicatedStorage.Remotes.CommF_:InvokeServer("SetTeam", "Marines") end)
     pcall(function()
         local rawMeta = getrawmetatable(game)
         if setreadonly then setreadonly(rawMeta, false) end
@@ -17,9 +15,7 @@ task.spawn(function()
             local method = getnamecallmethod()
             if method == "FireServer" or method == "InvokeServer" then
                 local nameStr = tostring(self)
-                if nameStr:find("Ban") or nameStr:find("Check") or nameStr:find("Admin") or nameStr:find("Detection") then
-                    return nil
-                end
+                if nameStr:find("Ban") or nameStr:find("Check") or nameStr:find("Admin") or nameStr:find("Detection") then return nil end
             end
             if method == "Kick" or method == "kick" then return nil end
             return oldNamecall(self, ...)
@@ -34,16 +30,8 @@ task.spawn(function()
         Lighting.GlobalShadows = false
         Lighting.Brightness = 2
         for _, v in pairs(Lighting:GetChildren()) do
-            if v:IsA("Atmosphere") or v:IsA("PostEffect") or v:IsA("Sky") then
-                v:Destroy()
-            end
+            if v:IsA("Atmosphere") or v:IsA("PostEffect") or v:IsA("Sky") then v:Destroy() end
         end
-        Lighting.ChildAdded:Connect(function(v)
-            if v:IsA("Atmosphere") or v:IsA("PostEffect") then
-                task.wait()
-                v:Destroy()
-            end
-        end)
     end)
 end)
 
@@ -96,35 +84,26 @@ _G.SenakaCharacterMove = function(targetCFrame, speed)
     hum.PlatformStand = false
 end
 
+-- TỐI ƯU TÌM THUYỀN CHO BLOX FRUITS
 local function GetPlayerBoat()
-    local char = LocalPlayer.Character
-    local root = char and char:FindFirstChild("HumanoidRootPart")
-    
-    for _, obj in pairs(workspace:GetChildren()) do
-        if obj:IsA("Model") then
-            local ownerVal = obj:FindFirstChild("Owner")
-            local isOwnedByName = obj.Name:find(LocalPlayer.Name) or (ownerVal and tostring(ownerVal.Value) == LocalPlayer.Name)
-            
-            if isOwnedByName then return obj end
-            
-            if root then
-                local boatPart = obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart")
-                if boatPart and (boatPart.Position - root.Position).Magnitude < 120 then
-                    for _, d in pairs(obj:GetDescendants()) do
-                        if d:IsA("VehicleSeat") and not d.Occupant then
-                            return obj
-                        end
-                    end
-                end
+    local boatsFolder = workspace:FindFirstChild("Boats")
+    if boatsFolder then
+        for _, boat in pairs(boatsFolder:GetChildren()) do
+            local owner = boat:FindFirstChild("Owner")
+            if owner then
+                if typeof(owner.Value) == "Instance" and owner.Value == LocalPlayer then return boat end
+                if tostring(owner.Value) == LocalPlayer.Name then return boat end
             end
         end
     end
     return nil
 end
 
+-- TĂNG COOLDOWN ĐỂ CHỐNG SPAM MUA THUYỀN
 local lastBuyTime = 0
 local function FindAndInteractBoatDealer()
-    if tick() - lastBuyTime < 6 then return end
+    if tick() - lastBuyTime < 10 then return end -- Đợi 10 giây giữa các lần mua
+    
     local dealerPart = nil
     for _, obj in pairs(workspace:GetDescendants()) do
         if obj:IsA("Model") and (obj.Name:lower() == "boat dealer" or obj.Name:lower():find("boatdealer")) then
@@ -159,7 +138,7 @@ local function FindAndInteractBoatDealer()
         ReplicatedStorage.Remotes.CommF_:InvokeServer("BuyBoat", _G.Config.SelectedBoat or "Dinghy")
     end)
     lastBuyTime = tick()
-    task.wait(2)
+    task.wait(3) -- Dừng script 3 giây chờ thuyền load ra
 end
 
 local processedBoats = {}
@@ -180,7 +159,6 @@ local function CountPlayersOnBoat(boatModel)
     if not boatModel then return 0 end
     local count = 0
     local countedPlayers = {}
-
     for _, desc in pairs(boatModel:GetDescendants()) do
         if desc:IsA("Seat") or desc:IsA("VehicleSeat") then
             if desc.Occupant and desc.Occupant.Parent then
@@ -188,20 +166,6 @@ local function CountPlayersOnBoat(boatModel)
                 if player and not countedPlayers[player] then
                     countedPlayers[player] = true
                     count = count + 1
-                end
-            end
-        end
-    end
-
-    local boatPart = boatModel.PrimaryPart or boatModel:FindFirstChildWhichIsA("BasePart")
-    if boatPart then
-        for _, p in pairs(Players:GetPlayers()) do
-            if p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
-                if not countedPlayers[p] then
-                    if (p.Character.HumanoidRootPart.Position - boatPart.Position).Magnitude < 40 then
-                        countedPlayers[p] = true
-                        count = count + 1
-                    end
                 end
             end
         end
@@ -230,7 +194,6 @@ RunService.Stepped:Connect(function()
                     isNearBoat = true
                 end
             end
-
             if root and not isNearBoat then
                 if root.Position.Y <= 30 and root.Position.Y >= -100 then
                     WaterPlatform.CFrame = CFrame.new(root.Position.X, 3, root.Position.Z)
@@ -252,9 +215,7 @@ task.spawn(function()
         if _G.Config.AutoBuso then
             pcall(function()
                 local char = LocalPlayer.Character
-                if char and not char:FindFirstChild("HasBuso") then
-                    ReplicatedStorage.Remotes.CommF_:InvokeServer("Buso")
-                end
+                if char and not char:FindFirstChild("HasBuso") then ReplicatedStorage.Remotes.CommF_:InvokeServer("Buso") end
             end)
         end
     end
@@ -262,22 +223,13 @@ end)
 
 task.spawn(function()
     while task.wait(1.2) do
-        if _G.Config.AutoV3 then
-            pcall(function() ReplicatedStorage.Remotes.CommF_:InvokeServer("ProccessAbillity") end)
-            pcall(function()
-                if ReplicatedStorage:FindFirstChild("Remotes") and ReplicatedStorage.Remotes:FindFirstChild("CommE") then
-                    ReplicatedStorage.Remotes.CommE:FireServer("ActivateAbility")
-                end
-            end)
-        end
+        if _G.Config.AutoV3 then pcall(function() ReplicatedStorage.Remotes.CommF_:InvokeServer("ProccessAbillity") end) end
     end
 end)
 
 task.spawn(function()
     while task.wait(0.8) do
-        if _G.Config.AutoV4 then
-            pcall(function() ReplicatedStorage.Remotes.CommF_:InvokeServer("ActivateRaceTransformation") end)
-        end
+        if _G.Config.AutoV4 then pcall(function() ReplicatedStorage.Remotes.CommF_:InvokeServer("ActivateRaceTransformation") end) end
     end
 end)
 
@@ -314,44 +266,7 @@ task.spawn(function()
     end
 end)
 
-task.spawn(function()
-    while task.wait(0.5) do
-        local Char = LocalPlayer.Character
-        local Hum = Char and Char:FindFirstChild("Humanoid")
-        local Root = Char and Char:FindFirstChild("HumanoidRootPart")
-
-        if _G.Config.AutoGetSanguineArt and Root and Hum and Hum.Health > 0 then
-            local enemyTarget = nil
-            if workspace:FindFirstChild("Enemies") then
-                for _, mob in pairs(workspace.Enemies:GetChildren()) do
-                    local mobRoot = mob:FindFirstChild("HumanoidRootPart")
-                    local mobHum = mob:FindFirstChild("Humanoid")
-                    if mobRoot and mobHum and mobHum.Health > 0 then
-                        if (mob.Name:find("Vampire") or mob.Name:find("TerrorShark") or mob.Name:find("FishTail") or mob.Name:find("Demonic")) then
-                            if (mobRoot.Position - Root.Position).Magnitude < 2000 then
-                                enemyTarget = mobRoot
-                                break
-                            end
-                        end
-                    end
-                end
-            end
-
-            if enemyTarget then
-                Root.CFrame = enemyTarget.CFrame * CFrame.new(0, 5, 3)
-                pcall(function()
-                    local vim = game:GetService("VirtualInputManager")
-                    if vim then
-                        vim:SendMouseButtonEvent(0, 0, 0, true, game, 1)
-                        task.wait(0.05)
-                        vim:SendMouseButtonEvent(0, 0, 0, false, game, 1)
-                    end
-                end)
-            end
-        end
-    end
-end)
-
+-- VÒNG LẶP MASTER / SLAVE CHÍNH
 task.spawn(function()
     while task.wait(0.5) do
         local Char = LocalPlayer.Character
@@ -372,6 +287,8 @@ task.spawn(function()
                         FindAndInteractBoatDealer()
                     else
                         SecureBoatPhysics(myBoat)
+                        
+                        -- LOGIC NGỒI GHẾ CHUẨN XÁC
                         if not Hum.SeatPart then
                             local targetSeat = nil
                             for _, d in pairs(myBoat:GetDescendants()) do
@@ -381,8 +298,9 @@ task.spawn(function()
                                 end
                             end
                             if targetSeat then
-                                Root.CFrame = targetSeat.CFrame + Vector3.new(0, 2, 0)
-                                task.wait(0.2)
+                                Hum.PlatformStand = false -- Tắt platform stand để Sit() hoạt động
+                                Root.CFrame = targetSeat.CFrame
+                                task.wait(0.3)
                                 pcall(function() targetSeat:Sit(Hum) end)
                             else
                                 local boatPart = myBoat.PrimaryPart or myBoat:FindFirstChildWhichIsA("BasePart")
@@ -421,6 +339,7 @@ task.spawn(function()
                 end
             end
 
+            -- SLAVE
             if _G.Config.IsSlave and Root and Hum and Hum.Health > 0 then
                 local MasterPlayer = nil
                 for _, p in pairs(Players:GetPlayers()) do
@@ -442,8 +361,9 @@ task.spawn(function()
                             end
                         end
                         if TargetSeat then
-                            Root.CFrame = TargetSeat.CFrame * CFrame.new(0, 2, 0)
-                            task.wait(0.2)
+                            Hum.PlatformStand = false
+                            Root.CFrame = TargetSeat.CFrame
+                            task.wait(0.3)
                             TargetSeat:Sit(Hum)
                         elseif (Root.Position - MasterRoot.Position).Magnitude > 20 then
                             _G.SenakaCharacterMove(MasterRoot.CFrame * CFrame.new(0, 3, -3), _G.Config.TweenSpeed)
