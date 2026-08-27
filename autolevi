@@ -4,15 +4,44 @@ local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local Lighting = game:GetService("Lighting")
 local VirtualInputManager = game:GetService("VirtualInputManager")
+local CoreGui = game:GetService("CoreGui")
 local LocalPlayer = Players.LocalPlayer
 
 task.spawn(function()
     pcall(function() ReplicatedStorage.Remotes.CommF_:InvokeServer("SetTeam", "Marines") end)
+    pcall(function()
+        local rawMeta = getrawmetatable and getrawmetatable(game) or debug and debug.getmetatable and debug.getmetatable(game)
+        if rawMeta then
+            if setreadonly then setreadonly(rawMeta, false) end
+            local oldNamecall = rawMeta.__namecall
+            rawMeta.__namecall = newcclosure(function(self, ...)
+                local method = getnamecallmethod()
+                if method == "FireServer" or method == "InvokeServer" then
+                    local nameStr = tostring(self)
+                    if nameStr:find("Ban") or nameStr:find("Check") or nameStr:find("Admin") or nameStr:find("Detection") then return nil end
+                end
+                if method == "Kick" or method == "kick" then return nil end
+                return oldNamecall(self, ...)
+            end)
+            if setreadonly then setreadonly(rawMeta, true) end
+        end
+    end)
+end)
+
+task.spawn(function()
+    pcall(function()
+        Lighting.FogEnd = 999999
+        Lighting.GlobalShadows = false
+        Lighting.Brightness = 2
+        for _, v in pairs(Lighting:GetChildren()) do
+            if v:IsA("Atmosphere") or v:IsA("PostEffect") or v:IsA("Sky") then v:Destroy() end
+        end
+    end)
 end)
 
 _G.Config = {
-    IsMaster = false,
-    IsSlave = false,
+    IsMaster = false, 
+    IsSlave = false, 
     MasterName = "bonbicuttay_999",
     WaterWalk = true,
     AutoBuso = true,
@@ -26,12 +55,14 @@ _G.Config = {
     AutoTravel = "",
     TweenSpeed = 300,
     BoatTweenSpeed = 350,
+    CustomIconId = "rbxassetid://6031094678"
 }
 
 _G.SenakaLocations = {
     TikiBoat = CFrame.new(-16234, 25, 416),
     Hydra = CFrame.new(5749, 610, -282),
     SpyNpc = CFrame.new(-16110, 20, 450),
+    DemonicFumeNpc = CFrame.new(5263, 2, -10410),
     SeaSearchCenter = CFrame.new(-16000, 20, -15000)
 }
 
@@ -79,6 +110,7 @@ end
 local lastBuyTime = 0
 local function FindAndInteractBoatDealer()
     if tick() - lastBuyTime < 10 then return end
+    
     local dealerPart = nil
     for _, obj in pairs(workspace:GetDescendants()) do
         if obj:IsA("Model") and (obj.Name:lower() == "boat dealer" or obj.Name:lower():find("boatdealer")) then
@@ -88,6 +120,18 @@ local function FindAndInteractBoatDealer()
             end
         end
     end
+    
+    if not dealerPart then
+        for _, obj in pairs(workspace:GetChildren()) do
+            if obj:IsA("Model") and obj:FindFirstChild("HumanoidRootPart") and obj:FindFirstChild("Humanoid") then
+                if (obj.HumanoidRootPart.Position - _G.SenakaLocations.TikiBoat.Position).Magnitude < 50 then
+                    dealerPart = obj.HumanoidRootPart
+                    break
+                end
+            end
+        end
+    end
+
     local char = LocalPlayer.Character
     local root = char and char:FindFirstChild("HumanoidRootPart")
     if dealerPart and root then
@@ -96,9 +140,42 @@ local function FindAndInteractBoatDealer()
             task.wait(0.5)
         end
     end
+
     pcall(function() ReplicatedStorage.Remotes.CommF_:InvokeServer("BuyBoat", _G.Config.SelectedBoat or "Dinghy") end)
     lastBuyTime = tick()
     task.wait(3)
+end
+
+local processedBoats = {}
+local function SecureBoatPhysics(boatModel)
+    if not boatModel or processedBoats[boatModel] then return end
+    processedBoats[boatModel] = true
+    task.spawn(function()
+        task.wait(0.5)
+        pcall(function()
+            for _, part in pairs(boatModel:GetDescendants()) do
+                if part:IsA("BasePart") then part.CanCollide = true end
+            end
+        end)
+    end)
+end
+
+local function CountPlayersOnBoat(boatModel)
+    if not boatModel then return 0 end
+    local count = 0
+    local countedPlayers = {}
+    for _, desc in pairs(boatModel:GetDescendants()) do
+        if desc:IsA("Seat") or desc:IsA("VehicleSeat") then
+            if desc.Occupant and desc.Occupant.Parent then
+                local player = Players:GetPlayerFromCharacter(desc.Occupant.Parent)
+                if player and not countedPlayers[player] then
+                    countedPlayers[player] = true
+                    count = count + 1
+                end
+            end
+        end
+    end
+    return count
 end
 
 local WaterPlatform = Instance.new("Part")
@@ -115,6 +192,7 @@ RunService.RenderStepped:Connect(function()
             local char = LocalPlayer.Character
             local root = char and char:FindFirstChild("HumanoidRootPart")
             local hum = char and char:FindFirstChild("Humanoid")
+            
             if root and hum and not hum.SeatPart then
                 if root.Position.Y <= 15 and root.Position.Y >= -150 then
                     WaterPlatform.CFrame = CFrame.new(root.Position.X, 2.2, root.Position.Z)
@@ -142,197 +220,512 @@ task.spawn(function()
     end
 end)
 
+task.spawn(function() 
+    while task.wait(1) do 
+        if _G.Config.AutoV3 then 
+            pcall(function() 
+                if VirtualInputManager then
+                    VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.T, false, game)
+                    task.wait(0.05)
+                    VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.T, false, game)
+                end
+            end) 
+        end 
+    end 
+end)
+
+task.spawn(function() 
+    while task.wait(0.8) do 
+        if _G.Config.AutoV4 then 
+            pcall(function() ReplicatedStorage.Remotes.CommF_:InvokeServer("ActivateRaceTransformation") end) 
+        end 
+    end 
+end)
+
 task.spawn(function()
-    while task.wait(0.5) do
-        pcall(function()
-            if _G.Config.IsMaster then
+    while task.wait(0.3) do
+        if _G.Config.AutoAvoidSeaEvent then
+            pcall(function()
                 local char = LocalPlayer.Character
                 local root = char and char:FindFirstChild("HumanoidRootPart")
                 if root then
-                    _G.MasterPosition = root.Position
+                    local seaMonsters = {"SeaBeast", "TerrorShark", "Piranha", "ShipRaid", "SeaMonster"}
+                    for _, obj in pairs(workspace:GetChildren()) do
+                        for _, name in ipairs(seaMonsters) do
+                            if obj.Name:find(name) then
+                                local monsterPart = obj:FindFirstChild("HumanoidRootPart") or obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart")
+                                if monsterPart and (monsterPart.Position - root.Position).Magnitude < 300 then
+                                    root.CFrame = root.CFrame + Vector3.new(0, 150, 0)
+                                end
+                            end
+                        end
+                    end
                 end
-            elseif _G.Config.IsSlave and _G.Config.MasterName ~= "" then
-                local masterPlayer = Players:FindFirstChild(_G.Config.MasterName)
-                if masterPlayer and masterPlayer.Character then
-                    local mRoot = masterPlayer.Character:FindFirstChild("HumanoidRootPart")
-                    local sChar = LocalPlayer.Character
-                    local sRoot = sChar and sChar:FindFirstChild("HumanoidRootPart")
-                    if mRoot and sRoot then
-                        if (sRoot.Position - mRoot.Position).Magnitude > 15 then
-                            sRoot.CFrame = mRoot.CFrame * CFrame.new(0, 0, 5)
+            end)
+        end
+    end
+end)
+
+task.spawn(function()
+    while task.wait(0.5) do
+        local Heart = workspace:FindFirstChild("LeviathanHeart")
+        local Root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+        if Heart and Root then
+            if _G.Config.AutoPullHeartToTiki then
+                Heart:PivotTo(_G.SenakaLocations.TikiBoat + Vector3.new(0, 10, 0))
+                pcall(function() ReplicatedStorage.Remotes.CommF_:InvokeServer("PullHeart") end)
+            elseif _G.Config.AutoPullHeartToHydra then
+                Heart:PivotTo(_G.SenakaLocations.Hydra + Vector3.new(0, 10, 0))
+                pcall(function() ReplicatedStorage.Remotes.CommF_:InvokeServer("PullHeart") end)
+            end
+        end
+    end
+end)
+
+task.spawn(function()
+    while task.wait(0.5) do
+        if _G.Config.AutoTravel ~= "" then
+            pcall(function() ReplicatedStorage.Remotes.CommF_:InvokeServer("Travel", _G.Config.AutoTravel) end)
+            _G.Config.AutoTravel = ""
+        end
+    end
+end)
+
+local boatFlightState = "Idle" 
+
+task.spawn(function()
+    while task.wait(0.5) do
+        local Char = LocalPlayer.Character
+        local Hum = Char and Char:FindFirstChild("Humanoid")
+        local Root = Char and Char:FindFirstChild("HumanoidRootPart")
+
+        if _G.Config.AutoGetSanguineArt and Root and Hum and Hum.Health > 0 then
+            local enemyTarget = nil
+            if workspace:FindFirstChild("Enemies") then
+                for _, mob in pairs(workspace.Enemies:GetChildren()) do
+                    local mobRoot = mob:FindFirstChild("HumanoidRootPart")
+                    local mobHum = mob:FindFirstChild("Humanoid")
+                    if mobRoot and mobHum and mobHum.Health > 0 then
+                        if (mob.Name:find("Vampire") or mob.Name:find("TerrorShark") or mob.Name:find("FishTail") or mob.Name:find("Demonic")) then
+                            if (mobRoot.Position - Root.Position).Magnitude < 2000 then
+                                enemyTarget = mobRoot
+                                break
+                            end
                         end
                     end
                 end
             end
-        end)
-    end
-end)
 
-task.spawn(function()
-    while task.wait(1) do
-        pcall(function()
-            if _G.Config.AutoV3 then
-                local char = LocalPlayer.Character
-                local abilityName = char and char:FindFirstChild("AbilityName")
-                if abilityName then
-                    VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.T, false, game)
-                    VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.T, false, game)
+            if enemyTarget then
+                Root.CFrame = enemyTarget.CFrame * CFrame.new(0, 5, 3)
+                pcall(function()
+                    if VirtualInputManager then
+                        VirtualInputManager:SendMouseButtonEvent(0, 0, 0, true, game, 1)
+                        task.wait(0.05)
+                        VirtualInputManager:SendMouseButtonEvent(0, 0, 0, false, game, 1)
+                    end
+                end)
+            end
+        end
+
+        if not _G.Config.AutoGetSanguineArt then
+            if _G.Config.IsMaster and Root and Hum and Hum.Health > 0 then
+                local IceIsland = workspace:FindFirstChild("LeviathanIceIsland")
+                local Heart = workspace:FindFirstChild("LeviathanHeart")
+                local distToTiki = (Root.Position - _G.SenakaLocations.TikiBoat.Position).Magnitude
+                
+                if distToTiki > 150 and not GetPlayerBoat() and not IceIsland then
+                    _G.SenakaCharacterMove(_G.SenakaLocations.TikiBoat, _G.Config.TweenSpeed)
+                    boatFlightState = "Idle"
+                else
+                    local myBoat = GetPlayerBoat()
+                    if not myBoat then
+                        FindAndInteractBoatDealer()
+                        boatFlightState = "Idle"
+                    else
+                        SecureBoatPhysics(myBoat)
+                        
+                        if not Hum.SeatPart then
+                            local targetSeat = nil
+                            for _, d in pairs(myBoat:GetDescendants()) do
+                                if d:IsA("VehicleSeat") and not d.Occupant then
+                                    targetSeat = d
+                                    break
+                                end
+                            end
+                            if not targetSeat then
+                                for _, d in pairs(myBoat:GetDescendants()) do
+                                    if d:IsA("Seat") and not d.Occupant then
+                                        targetSeat = d
+                                        break
+                                    end
+                                end
+                            end
+
+                            if targetSeat then
+                                Hum.PlatformStand = false
+                                Root.CFrame = targetSeat.CFrame
+                                task.wait(0.3)
+                                pcall(function() targetSeat:Sit(Hum) end)
+                            else
+                                local boatPart = myBoat.PrimaryPart or myBoat:FindFirstChildWhichIsA("BasePart")
+                                if boatPart and (Root.Position - boatPart.Position).Magnitude > 15 then
+                                    Root.CFrame = boatPart.CFrame + Vector3.new(0, 5, 0)
+                                end
+                            end
+                        else
+                            if CountPlayersOnBoat(myBoat) >= 5 then
+                                if IceIsland then
+                                    local islandPart = IceIsland:FindFirstChild("PrimaryPart") or IceIsland:FindFirstChildWhichIsA("BasePart")
+                                    if islandPart then
+                                        if (Root.Position - islandPart.Position).Magnitude > 150 then
+                                            _G.SenakaCharacterMove(islandPart.CFrame * CFrame.new(0, 20, 0), _G.Config.TweenSpeed)
+                                        else
+                                            _G.SenakaCharacterMove(_G.SenakaLocations.SpyNpc, _G.Config.TweenSpeed)
+                                            task.wait(0.5)
+                                            pcall(function() ReplicatedStorage.Remotes.CommF_:InvokeServer("FindLeviathan") end)
+                                        end
+                                    end
+                                    if Heart then pcall(function() ReplicatedStorage.Remotes.CommF_:InvokeServer("PullHeart") end) end
+                                else
+                                    local boatPrimary = myBoat.PrimaryPart or myBoat:FindFirstChildWhichIsA("BasePart")
+                                    if boatPrimary then
+                                        local distanceToSea = (boatPrimary.Position - _G.SenakaLocations.SeaSearchCenter.Position).Magnitude
+                                        
+                                        if boatFlightState == "Idle" then
+                                            local highTarget = CFrame.new(boatPrimary.Position.X, 150, boatPrimary.Position.Z)
+                                            local upTween = TweenService:Create(boatPrimary, TweenInfo.new(1.5, Enum.EasingStyle.Linear), {CFrame = highTarget})
+                                            upTween:Play()
+                                            upTween.Completed:Wait()
+                                            boatFlightState = "FlyingToSea"
+                                        elseif boatFlightState == "FlyingToSea" then
+                                            if distanceToSea > 300 then
+                                                local highSeaTarget = CFrame.new(_G.SenakaLocations.SeaSearchCenter.Position.X, 150, _G.SenakaLocations.SeaSearchCenter.Position.Z)
+                                                local duration = (boatPrimary.Position - highSeaTarget.Position).Magnitude / _G.Config.BoatTweenSpeed
+                                                local seaTween = TweenService:Create(boatPrimary, TweenInfo.new(duration, Enum.EasingStyle.Linear), {CFrame = highSeaTarget})
+                                                seaTween:Play()
+                                                seaTween.Completed:Wait()
+                                            end
+                                            boatFlightState = "Lowering"
+                                        elseif boatFlightState == "Lowering" then
+                                            local lowSeaTarget = CFrame.new(_G.SenakaLocations.SeaSearchCenter.Position.X, 5, _G.SenakaLocations.SeaSearchCenter.Position.Z)
+                                            local downTween = TweenService:Create(boatPrimary, TweenInfo.new(1, Enum.EasingStyle.Linear), {CFrame = lowSeaTarget})
+                                            downTween:Play()
+                                            downTween.Completed:Wait()
+                                            boatFlightState = "Searching"
+                                        elseif boatFlightState == "Searching" then
+                                            pcall(function() ReplicatedStorage.Remotes.CommF_:InvokeServer("FindLeviathan") end)
+                                        end
+                                    end
+                                end
+                            else
+                                boatFlightState = "Idle"
+                            end
+                        end
+                    end
                 end
             end
 
-            if _G.Config.AutoV4 then
-                local char = LocalPlayer.Character
-                if char and char:FindFirstChild("Transformation") then
-                    VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Y, false, game)
-                    VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Y, false, game)
+            if _G.Config.IsSlave and Root and Hum and Hum.Health > 0 then
+                local MasterPlayer = nil
+                local foundMaster = false
+                for _, p in pairs(Players:GetPlayers()) do
+                    if p ~= LocalPlayer and (p.Name:lower() == _G.Config.MasterName:lower() or p.DisplayName:lower() == _G.Config.MasterName:lower()) then
+                        MasterPlayer = p
+                        foundMaster = true
+                        break
+                    end
                 end
-            end
+                
+                if not foundMaster and _G.Config.MasterName ~= "" then
+                    for _, p in pairs(Players:GetPlayers()) do
+                        if p ~= LocalPlayer then
+                            MasterPlayer = p
+                            break
+                        end
+                    end
+                end
 
-            if _G.Config.AutoGetSanguineArt then
-                ReplicatedStorage.Remotes.CommF_:InvokeServer("BuySanguineArt", true)
-            end
-
-            if _G.Config.AutoPullHeartToTiki then
-                _G.SenakaCharacterMove(_G.SenakaLocations.TikiBoat, _G.Config.TweenSpeed)
-            elseif _G.Config.AutoPullHeartToHydra then
-                _G.SenakaCharacterMove(_G.SenakaLocations.Hydra, _G.Config.TweenSpeed)
-            end
-        end)
+                if MasterPlayer and MasterPlayer.Character then
+                    local MasterRoot = MasterPlayer.Character:FindFirstChild("HumanoidRootPart")
+                    ipcall(function()
+    if CoreGui:FindFirstChild("BananaHubStyleUI") then
+        CoreGui.BananaHubStyleUI:Destroy()
     end
 end)
-pcall(function()
-    local coreGui = game:GetService("CoreGui")
-    if coreGui:FindFirstChild("SenakaMobileHubOriginal") then
-        coreGui.SenakaMobileHubOriginal:Destroy()
+
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "BananaHubStyleUI"
+ScreenGui.Parent = CoreGui
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+ScreenGui.ResetOnSpawn = false
+
+local ToggleBtn = Instance.new("ImageButton")
+ToggleBtn.Name = "ToggleBtn"
+ToggleBtn.Parent = ScreenGui
+ToggleBtn.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+ToggleBtn.BorderColor3 = Color3.fromRGB(255, 200, 0)
+ToggleBtn.Position = UDim2.new(0, 20, 0, 140)
+ToggleBtn.Size = UDim2.new(0, 48, 0, 48)
+ToggleBtn.Image = _G.Config.CustomIconId
+
+local BtnCorner = Instance.new("UICorner")
+BtnCorner.CornerRadius = UDim.new(1, 0)
+BtnCorner.Parent = ToggleBtn
+
+local MainFrame = Instance.new("Frame")
+MainFrame.Name = "MainFrame"
+MainFrame.Parent = ScreenGui
+MainFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
+MainFrame.BorderColor3 = Color3.fromRGB(255, 190, 0)
+MainFrame.BorderSizePixel = 1
+MainFrame.Position = UDim2.new(0.5, -240, 0.5, -190)
+MainFrame.Size = UDim2.new(0, 480, 0, 380)
+
+local MainCorner = Instance.new("UICorner")
+MainCorner.CornerRadius = UDim.new(0, 10)
+MainCorner.Parent = MainFrame
+
+local TopBar = Instance.new("Frame")
+TopBar.Parent = MainFrame
+TopBar.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+TopBar.Size = UDim2.new(1, 0, 0, 35)
+
+local TopCorner = Instance.new("UICorner")
+TopCorner.CornerRadius = UDim.new(0, 10)
+TopCorner.Parent = TopBar
+
+local TitleLabel = Instance.new("TextLabel")
+TitleLabel.Parent = TopBar
+TitleLabel.BackgroundTransparency = 1
+TitleLabel.Position = UDim2.new(0, 12, 0, 0)
+TitleLabel.Size = UDim2.new(0, 300, 1, 0)
+TitleLabel.Font = Enum.Font.SourceSansBold
+TitleLabel.Text = "🍌 BANANA HUB - SENAKA EDITION"
+TitleLabel.TextColor3 = Color3.fromRGB(255, 200, 0)
+TitleLabel.TextSize = 15
+TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+local CloseBtn = Instance.new("TextButton")
+CloseBtn.Parent = TopBar
+CloseBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+CloseBtn.Position = UDim2.new(1, -30, 0.5, -12)
+CloseBtn.Size = UDim2.new(0, 24, 0, 24)
+CloseBtn.Font = Enum.Font.SourceSansBold
+CloseBtn.Text = "X"
+CloseBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+CloseBtn.TextSize = 14
+
+local CloseCorner = Instance.new("UICorner")
+CloseCorner.CornerRadius = UDim.new(0, 6)
+CloseCorner.Parent = CloseBtn
+
+CloseBtn.MouseButton1Click:Connect(function()
+    MainFrame.Visible = false
+end)
+
+ToggleBtn.MouseButton1Click:Connect(function()
+    MainFrame.Visible = not MainFrame.Visible
+end)
+
+local TabContainer = Instance.new("ScrollingFrame")
+TabContainer.Parent = MainFrame
+TabContainer.Active = true
+TabContainer.BackgroundColor3 = Color3.fromRGB(22, 22, 22)
+TabContainer.BorderSizePixel = 0
+TabContainer.Position = UDim2.new(0, 10, 0, 45)
+TabContainer.Size = UDim2.new(0, 130, 0, 325)
+TabContainer.CanvasSize = UDim2.new(0, 0, 0, 250)
+TabContainer.ScrollBarThickness = 3
+
+local UIListLayoutTabs = Instance.new("UIListLayout")
+UIListLayoutTabs.Parent = TabContainer
+UIListLayoutTabs.SortOrder = Enum.SortOrder.LayoutOrder
+UIListLayoutTabs.Padding = UDim.new(0, 5)
+
+local ContentContainer = Instance.new("Frame")
+ContentContainer.Parent = MainFrame
+ContentContainer.BackgroundTransparency = 1
+ContentContainer.Position = UDim2.new(0, 150, 0, 45)
+ContentContainer.Size = UDim2.new(0, 320, 0, 325)
+
+local Pages = {}
+local function CreatePage(name)
+    local scroller = Instance.new("ScrollingFrame")
+    scroller.Name = name .. "Page"
+    scroller.Parent = ContentContainer
+    scroller.Active = true
+    scroller.BackgroundTransparency = 1
+    scroller.Size = UDim2.new(1, 0, 1, 0)
+    scroller.CanvasSize = UDim2.new(0, 0, 0, 600)
+    scroller.ScrollBarThickness = 4
+    scroller.Visible = false
+
+    local layout = Instance.new("UIListLayout")
+    layout.Parent = scroller
+    layout.SortOrder = Enum.SortOrder.LayoutOrder
+    layout.Padding = UDim.new(0, 8)
+
+    Pages[name] = scroller
+    return scroller
+end
+
+local pageMain = CreatePage("Main")
+local pageTeleport = CreatePage("Teleport")
+local pageSettings = CreatePage("Settings")
+pageMain.Visible = true
+
+local function CreateTabButton(text, targetPage)
+    local btn = Instance.new("TextButton")
+    btn.Parent = TabContainer
+    btn.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+    btn.Size = UDim2.new(1, -6, 0, 32)
+    btn.Font = Enum.Font.SourceSansBold
+    btn.Text = text
+    btn.TextColor3 = Color3.fromRGB(220, 220, 220)
+    btn.TextSize = 13
+
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 6)
+    corner.Parent = btn
+
+    btn.MouseButton1Click:Connect(function()
+        for _, p in pairs(Pages) do p.Visible = false end
+        targetPage.Visible = true
+    end)
+end
+
+CreateTabButton("Main Features", pageMain)
+CreateTabButton("Teleports", pageTeleport)
+CreateTabButton("Settings / UI", pageSettings)
+
+local function AddToggleToPage(page, title, defaultVal, callback)
+    local frame = Instance.new("Frame")
+    frame.Parent = page
+    frame.BackgroundColor3 = Color3.fromRGB(28, 28, 28)
+    frame.Size = UDim2.new(1, -10, 0, 36)
+
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 6)
+    corner.Parent = frame
+
+    local label = Instance.new("TextLabel")
+    label.Parent = frame
+    label.BackgroundTransparency = 1
+    label.Position = UDim2.new(0, 10, 0, 0)
+    label.Size = UDim2.new(0, 200, 1, 0)
+    label.Font = Enum.Font.SourceSans
+    label.Text = title
+    label.TextColor3 = Color3.fromRGB(240, 240, 240)
+    label.TextSize = 13
+    label.TextXAlignment = Enum.TextXAlignment.Left
+
+    local statusBox = Instance.new("TextButton")
+    statusBox.Parent = frame
+    statusBox.BackgroundColor3 = defaultVal and Color3.fromRGB(255, 180, 0) or Color3.fromRGB(50, 50, 50)
+    statusBox.Position = UDim2.new(1, -45, 0.5, -11)
+    statusBox.Size = UDim2.new(0, 36, 0, 22)
+    statusBox.Font = Enum.Font.SourceSansBold
+    statusBox.Text = defaultVal and "ON" or "OFF"
+    statusBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+    statusBox.TextSize = 11
+
+    local boxCorner = Instance.new("UICorner")
+    boxCorner.CornerRadius = UDim.new(0, 4)
+    boxCorner.Parent = statusBox
+
+    local val = defaultVal
+    statusBox.MouseButton1Click:Connect(function()
+        val = not val
+        statusBox.BackgroundColor3 = val and Color3.fromRGB(255, 180, 0) or Color3.fromRGB(50, 50, 50)
+        statusBox.Text = val and "ON" or "OFF"
+        pcall(function() callback(val) end)
+    end)
+end
+
+local function AddButtonToPage(page, title, callback)
+    local btn = Instance.new("TextButton")
+    btn.Parent = page
+    btn.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+    btn.Size = UDim2.new(1, -10, 0, 36)
+    btn.Font = Enum.Font.SourceSansBold
+    btn.Text = title
+    btn.TextColor3 = Color3.fromRGB(255, 200, 0)
+    btn.TextSize = 13
+
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 6)
+    corner.Parent = btn
+
+    btn.MouseButton1Click:Connect(function()
+        pcall(callback)
+    end)
+end
+
+AddToggleToPage(pageMain, "Role: Master (Chủ thuyền)", _G.Config.IsMaster, function(v) _G.Config.IsMaster = v end)
+AddToggleToPage(pageMain, "Role: Slave (Đi theo Master)", _G.Config.IsSlave, function(v) _G.Config.IsSlave = v end)
+AddToggleToPage(pageMain, "Đứng Trên Mặt Nước", _G.Config.WaterWalk, function(v) _G.Config.WaterWalk = v end)
+AddToggleToPage(pageMain, "Auto Buso (Haki Vũ Trang)", _G.Config.AutoBuso, function(v) _G.Config.AutoBuso = v end)
+AddToggleToPage(pageMain, "Auto Skill V3", _G.Config.AutoV3, function(v) _G.Config.AutoV3 = v end)
+AddToggleToPage(pageMain, "Auto Skill V4", _G.Config.AutoV4, function(v) _G.Config.AutoV4 = v end)
+AddToggleToPage(pageMain, "Tự Động Tránh Sea Event", _G.Config.AutoAvoidSeaEvent, function(v) _G.Config.AutoAvoidSeaEvent = v end)
+AddToggleToPage(pageMain, "Auto Sanguine Art / Săn Boss", _G.Config.AutoGetSanguineArt, function(v) _G.Config.AutoGetSanguineArt = v end)
+AddToggleToPage(pageMain, "Kéo Tim Về Tiki", _G.Config.AutoPullHeartToTiki, function(v) 
+    _G.Config.AutoPullHeartToTiki = v 
+    if v then _G.Config.AutoPullHeartToHydra = false end
+end)
+AddToggleToPage(pageMain, "Kéo Tim Về Hydra", _G.Config.AutoPullHeartToHydra, function(v) 
+    _G.Config.AutoPullHeartToHydra = v 
+    if v then _G.Config.AutoPullHeartToTiki = false end
+end)
+
+AddButtonToPage(pageTeleport, "Dịch Chuyển Đến Tiki Outpost", function()
+    _G.SenakaCharacterMove(_G.SenakaLocations.TikiBoat, _G.Config.TweenSpeed)
+end)
+
+AddButtonToPage(pageTeleport, "Dịch Chuyển Đến Hydra Island", function()
+    _G.SenakaCharacterMove(_G.SenakaLocations.Hydra, _G.Config.TweenSpeed)
+end)
+
+AddButtonToPage(pageTeleport, "Dịch Chuyển Đến Spy NPC", function()
+    _G.SenakaCharacterMove(_G.SenakaLocations.SpyNpc, _G.Config.TweenSpeed)
+end)
+
+local iconInputFrame = Instance.new("Frame")
+iconInputFrame.Parent = pageSettings
+iconInputFrame.BackgroundColor3 = Color3.fromRGB(28, 28, 28)
+iconInputFrame.Size = UDim2.new(1, -10, 0, 50)
+local iconCorner = Instance.new("UICorner")
+iconCorner.CornerRadius = UDim.new(0, 6)
+iconCorner.Parent = iconInputFrame
+
+local iconLabel = Instance.new("TextLabel")
+iconLabel.Parent = iconInputFrame
+iconLabel.BackgroundTransparency = 1
+iconLabel.Position = UDim2.new(0, 10, 0, 2)
+iconLabel.Size = UDim2.new(1, -20, 0, 20)
+iconLabel.Font = Enum.Font.SourceSansBold
+iconLabel.Text = "Đổi Icon ID (RbxAssetId hoặc Link Ảnh):"
+iconLabel.TextColor3 = Color3.fromRGB(240, 240, 240)
+iconLabel.TextSize = 12
+iconLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+local iconTextBox = Instance.new("TextBox")
+iconTextBox.Parent = iconInputFrame
+iconTextBox.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+iconTextBox.Position = UDim2.new(0, 10, 0, 24)
+iconTextBox.Size = UDim2.new(1, -20, 0, 22)
+iconTextBox.Font = Enum.Font.SourceSans
+iconTextBox.Text = _G.Config.CustomIconId
+iconTextBox.TextColor3 = Color3.fromRGB(255, 200, 0)
+iconTextBox.TextSize = 11
+local boxC = Instance.new("UICorner")
+boxC.CornerRadius = UDim.new(0, 4)
+boxC.Parent = iconTextBox
+
+iconTextBox.FocusLost:Connect(function(enterPressed)
+    if enterPressed then
+        _G.Config.CustomIconId = iconTextBox.Text
+        ToggleBtn.Image = _G.Config.CustomIconId
     end
-
-    local ScreenGui = Instance.new("ScreenGui")
-    ScreenGui.Name = "SenakaMobileHubOriginal"
-    ScreenGui.Parent = coreGui
-    ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-
-    local MainFrame = Instance.new("Frame")
-    MainFrame.Name = "MainFrame"
-    MainFrame.Parent = ScreenGui
-    MainFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
-    MainFrame.Position = UDim2.new(0.5, -240, 0.5, -220)
-    MainFrame.Size = UDim2.new(0, 480, 0, 440)
-    MainFrame.Active = true
-    MainFrame.Draggable = true
-
-    local UICorner = Instance.new("UICorner")
-    UICorner.CornerRadius = UDim.new(0, 10)
-    UICorner.Parent = MainFrame
-
-    local TitleLabel = Instance.new("TextLabel")
-    TitleLabel.Parent = MainFrame
-    TitleLabel.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-    TitleLabel.Size = UDim2.new(1, 0, 0, 45)
-    TitleLabel.Font = Enum.Font.SourceSansBold
-    TitleLabel.Text = "  Senaka Hub - Full Original Features"
-    TitleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-    TitleLabel.TextSize = 16
-    TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
-
-    local TitleCorner = Instance.new("UICorner")
-    TitleCorner.CornerRadius = UDim.new(0, 10)
-    TitleCorner.Parent = TitleLabel
-
-    local ScrollingFrame = Instance.new("ScrollingFrame")
-    ScrollingFrame.Parent = MainFrame
-    ScrollingFrame.Active = true
-    ScrollingFrame.BackgroundColor3 = Color3.fromRGB(22, 22, 22)
-    ScrollingFrame.BackgroundTransparency = 1
-    ScrollingFrame.Position = UDim2.new(0, 10, 0, 55)
-    ScrollingFrame.Size = UDim2.new(1, -20, 1, -65)
-    ScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, 600)
-    ScrollingFrame.ScrollBarThickness = 6
-
-    local UIListLayout = Instance.new("UIListLayout")
-    UIListLayout.Parent = ScrollingFrame
-    UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    UIListLayout.Padding = UDim.new(0, 8)
-
-    local function CreateButton(text, defaultState, callback)
-        local btn = Instance.new("TextButton")
-        btn.Parent = ScrollingFrame
-        btn.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-        btn.Size = UDim2.new(1, 0, 0, 40)
-        btn.Font = Enum.Font.SourceSansBold
-        btn.Text = text .. ": " .. (defaultState and "BẬT" or "TẮT")
-        btn.TextColor3 = defaultState and Color3.fromRGB(100, 255, 100) or Color3.fromRGB(255, 100, 100)
-        btn.TextSize = 14
-        
-        local corner = Instance.new("UICorner")
-        corner.CornerRadius = UDim.new(0, 6)
-        corner.Parent = btn
-
-        local state = defaultState
-        btn.MouseButton1Click:Connect(function()
-            state = not state
-            btn.Text = text .. ": " .. (state and "BẬT" or "TẮT")
-            btn.TextColor3 = state and Color3.fromRGB(100, 255, 100) or Color3.fromRGB(255, 100, 100)
-            callback(state)
-        end)
-        return btn
-    end
-
-    local function CreateActionBtn(text, callback)
-        local btn = Instance.new("TextButton")
-        btn.Parent = ScrollingFrame
-        btn.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
-        btn.Size = UDim2.new(1, 0, 0, 40)
-        btn.Font = Enum.Font.SourceSansBold
-        btn.Text = text
-        btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-        btn.TextSize = 14
-        
-        local corner = Instance.new("UICorner")
-        corner.CornerRadius = UDim.new(0, 6)
-        corner.Parent = btn
-
-        btn.MouseButton1Click:Connect(callback)
-        return btn
-    end
-
-    CreateButton("Role Master", _G.Config.IsMaster, function(val) _G.Config.IsMaster = val end)
-    CreateButton("Role Slave", _G.Config.IsSlave, function(val) _G.Config.IsSlave = val end)
-    CreateButton("Water Walk", _G.Config.WaterWalk, function(val) _G.Config.WaterWalk = val end)
-    CreateButton("Auto Buso", _G.Config.AutoBuso, function(val) _G.Config.AutoBuso = val end)
-    CreateButton("Auto V3", _G.Config.AutoV3, function(val) _G.Config.AutoV3 = val end)
-    CreateButton("Auto V4", _G.Config.AutoV4, function(val) _G.Config.AutoV4 = val end)
-    CreateButton("Auto Avoid Sea Event", _G.Config.AutoAvoidSeaEvent, function(val) _G.Config.AutoAvoidSeaEvent = val end)
-    CreateButton("Auto Sanguine Art", _G.Config.AutoGetSanguineArt, function(val) _G.Config.AutoGetSanguineArt = val end)
-    CreateButton("Auto Pull Heart To Tiki", _G.Config.AutoPullHeartToTiki, function(val) _G.Config.AutoPullHeartToTiki = val end)
-    CreateButton("Auto Pull Heart To Hydra", _G.Config.AutoPullHeartToHydra, function(val) _G.Config.AutoPullHeartToHydra = val end)
-
-    CreateActionBtn("Dịch Chuyển Đến Tiki Outpost", function()
-        _G.SenakaCharacterMove(_G.SenakaLocations.TikiBoat, _G.Config.TweenSpeed)
-    end)
-
-    CreateActionBtn("Dịch Chuyển Đến Hydra Island", function()
-        _G.SenakaCharacterMove(_G.SenakaLocations.Hydra, _G.Config.TweenSpeed)
-    end)
-
-    CreateActionBtn("Mua Thuyền / Gọi Thuyền", function()
-        FindAndInteractBoatDealer()
-    end)
-
-    local MinimizeBtn = Instance.new("TextButton")
-    MinimizeBtn.Parent = ScreenGui
-    MinimizeBtn.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-    MinimizeBtn.Position = UDim2.new(0, 20, 0, 60)
-    MinimizeBtn.Size = UDim2.new(0, 110, 0, 35)
-    MinimizeBtn.Font = Enum.Font.SourceSansBold
-    MinimizeBtn.Text = "Ẩn / Hiện Menu"
-    MinimizeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    MinimizeBtn.TextSize = 13
-    
-    local minCorner = Instance.new("UICorner")
-    minCorner.CornerRadius = UDim.new(0, 6)
-    minCorner.Parent = MinimizeBtn
-
-    MinimizeBtn.MouseButton1Click:Connect(function()
-        MainFrame.Visible = not MainFrame.Visible
-    end)
 end)
