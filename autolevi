@@ -3,27 +3,27 @@ local TweenService = game:GetService("TweenService")
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local Lighting = game:GetService("Lighting")
-local VirtualInputManager = game:GetService("VirtualInputManager")
-local CoreGui = game:GetService("CoreGui")
 local LocalPlayer = Players.LocalPlayer
 
 task.spawn(function()
     pcall(function() ReplicatedStorage.Remotes.CommF_:InvokeServer("SetTeam", "Marines") end)
     pcall(function()
-        local rawMeta = getrawmetatable and getrawmetatable(game) or debug and debug.getmetatable and debug.getmetatable(game)
-        if rawMeta then
-            if setreadonly then setreadonly(rawMeta, false) end
-            local oldNamecall = rawMeta.__namecall
-            rawMeta.__namecall = newcclosure(function(self, ...)
-                local method = getnamecallmethod()
-                if method == "FireServer" or method == "InvokeServer" then
-                    local nameStr = tostring(self)
-                    if nameStr:find("Ban") or nameStr:find("Check") or nameStr:find("Admin") or nameStr:find("Detection") then return nil end
-                end
-                if method == "Kick" or method == "kick" then return nil end
-                return oldNamecall(self, ...)
-            end)
-            if setreadonly then setreadonly(rawMeta, true) end
+        if getrawmetatable and newcclosure then
+            local rawMeta = getrawmetatable(game)
+            if rawMeta then
+                if setreadonly then setreadonly(rawMeta, false) end
+                local oldNamecall = rawMeta.__namecall
+                rawMeta.__namecall = newcclosure(function(self, ...)
+                    local method = getnamecallmethod and getnamecallmethod()
+                    if method == "FireServer" or method == "InvokeServer" then
+                        local nameStr = tostring(self)
+                        if nameStr:find("Ban") or nameStr:find("Check") or nameStr:find("Admin") or nameStr:find("Detection") then return nil end
+                    end
+                    if method == "Kick" or method == "kick" then return nil end
+                    return oldNamecall(self, ...)
+                end)
+                if setreadonly then setreadonly(rawMeta, true) end
+            end
         end
     end)
 end)
@@ -92,6 +92,12 @@ _G.SenakaCharacterMove = function(targetCFrame, speed)
     if noclipConn then noclipConn:Disconnect() end
     hum.PlatformStand = false
 end
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TweenService = game:GetService("TweenService")
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local VirtualInputManager = game:GetService("VirtualInputManager")
+local LocalPlayer = Players.LocalPlayer
 
 local function GetPlayerBoat()
     local boatsFolder = workspace:FindFirstChild("Boats")
@@ -448,15 +454,56 @@ task.spawn(function()
 
                 if MasterPlayer and MasterPlayer.Character then
                     local MasterRoot = MasterPlayer.Character:FindFirstChild("HumanoidRootPart")
-                pcall(function()
-    if game:GetService("CoreGui"):FindFirstChild("BananaHubStyleUI") then
-        game:GetService("CoreGui").BananaHubStyleUI:Destroy()
+                    if MasterRoot and not Hum.SeatPart then
+                        local TargetSeat = nil
+                        local masterBoat = GetPlayerBoat()
+                        if masterBoat then
+                            for _, d in pairs(masterBoat:GetDescendants()) do
+                                if (d:IsA("Seat") or d:IsA("VehicleSeat")) and not d.Occupant then
+                                    TargetSeat = d
+                                    break
+                                end
+                            end
+                        end
+
+                        if TargetSeat then
+                            Hum.PlatformStand = false
+                            Root.CFrame = TargetSeat.CFrame
+                            task.wait(0.3)
+                            pcall(function() TargetSeat:Sit(Hum) end)
+                        else
+                            if (Root.Position - MasterRoot.Position).Magnitude > 20 then
+                                Root.CFrame = MasterRoot.CFrame * CFrame.new(0, 0, 5)
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+end)
+local CoreGui = game:GetService("CoreGui")
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+pcall(function()
+    if CoreGui:FindFirstChild("BananaHubStyleUI") then
+        CoreGui.BananaHubStyleUI:Destroy()
+    end
+end)
+
+local targetParent = CoreGui
+pcall(function()
+    if gethui then
+        targetParent = gethui()
+    elseif LocalPlayer and LocalPlayer:FindFirstChild("PlayerGui") then
+        targetParent = LocalPlayer.PlayerGui
     end
 end)
 
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "BananaHubStyleUI"
-ScreenGui.Parent = game:GetService("CoreGui")
+ScreenGui.Parent = targetParent
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 ScreenGui.ResetOnSpawn = false
 
@@ -467,7 +514,7 @@ ToggleBtn.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 ToggleBtn.BorderColor3 = Color3.fromRGB(255, 200, 0)
 ToggleBtn.Position = UDim2.new(0, 20, 0, 140)
 ToggleBtn.Size = UDim2.new(0, 48, 0, 48)
-ToggleBtn.Image = _G.Config.CustomIconId
+ToggleBtn.Image = (_G.Config and _G.Config.CustomIconId) or "rbxassetid://130284374965787"
 
 local BtnCorner = Instance.new("UICorner")
 BtnCorner.CornerRadius = UDim.new(1, 0)
@@ -662,33 +709,44 @@ local function AddButtonToPage(page, title, callback)
     end)
 end
 
-AddToggleToPage(pageMain, "Role: Master (Chủ thuyền)", _G.Config.IsMaster, function(v) _G.Config.IsMaster = v end)
-AddToggleToPage(pageMain, "Role: Slave (Đi theo Master)", _G.Config.IsSlave, function(v) _G.Config.IsSlave = v end)
-AddToggleToPage(pageMain, "Đứng Trên Mặt Nước", _G.Config.WaterWalk, function(v) _G.Config.WaterWalk = v end)
-AddToggleToPage(pageMain, "Auto Buso (Haki Vũ Trang)", _G.Config.AutoBuso, function(v) _G.Config.AutoBuso = v end)
-AddToggleToPage(pageMain, "Auto Skill V3", _G.Config.AutoV3, function(v) _G.Config.AutoV3 = v end)
-AddToggleToPage(pageMain, "Auto Skill V4", _G.Config.AutoV4, function(v) _G.Config.AutoV4 = v end)
-AddToggleToPage(pageMain, "Tự Động Tránh Sea Event", _G.Config.AutoAvoidSeaEvent, function(v) _G.Config.AutoAvoidSeaEvent = v end)
-AddToggleToPage(pageMain, "Auto Sanguine Art / Săn Boss", _G.Config.AutoGetSanguineArt, function(v) _G.Config.AutoGetSanguineArt = v end)
-AddToggleToPage(pageMain, "Kéo Tim Về Tiki", _G.Config.AutoPullHeartToTiki, function(v) 
-    _G.Config.AutoPullHeartToTiki = v 
-    if v then _G.Config.AutoPullHeartToHydra = false end
+local cfg = _G.Config or {}
+AddToggleToPage(pageMain, "Role: Master (Chủ thuyền)", cfg.IsMaster or false, function(v) if _G.Config then _G.Config.IsMaster = v end end)
+AddToggleToPage(pageMain, "Role: Slave (Đi theo Master)", cfg.IsSlave or false, function(v) if _G.Config then _G.Config.IsSlave = v end end)
+AddToggleToPage(pageMain, "Đứng Trên Mặt Nước", cfg.WaterWalk or false, function(v) if _G.Config then _G.Config.WaterWalk = v end end)
+AddToggleToPage(pageMain, "Auto Buso (Haki Vũ Trang)", cfg.AutoBuso or false, function(v) if _G.Config then _G.Config.AutoBuso = v end end)
+AddToggleToPage(pageMain, "Auto Skill V3", cfg.AutoV3 or false, function(v) if _G.Config then _G.Config.AutoV3 = v end end)
+AddToggleToPage(pageMain, "Auto Skill V4", cfg.AutoV4 or false, function(v) if _G.Config then _G.Config.AutoV4 = v end end)
+AddToggleToPage(pageMain, "Tự Động Tránh Sea Event", cfg.AutoAvoidSeaEvent or false, function(v) if _G.Config then _G.Config.AutoAvoidSeaEvent = v end end)
+AddToggleToPage(pageMain, "Auto Sanguine Art / Săn Boss", cfg.AutoGetSanguineArt or false, function(v) if _G.Config then _G.Config.AutoGetSanguineArt = v end end)
+AddToggleToPage(pageMain, "Kéo Tim Về Tiki", cfg.AutoPullHeartToTiki or false, function(v) 
+    if _G.Config then
+        _G.Config.AutoPullHeartToTiki = v 
+        if v then _G.Config.AutoPullHeartToHydra = false end
+    end
 end)
-AddToggleToPage(pageMain, "Kéo Tim Về Hydra", _G.Config.AutoPullHeartToHydra, function(v) 
-    _G.Config.AutoPullHeartToHydra = v 
-    if v then _G.Config.AutoPullHeartToTiki = false end
+AddToggleToPage(pageMain, "Kéo Tim Về Hydra", cfg.AutoPullHeartToHydra or false, function(v) 
+    if _G.Config then
+        _G.Config.AutoPullHeartToHydra = v 
+        if v then _G.Config.AutoPullHeartToTiki = false end
+    end
 end)
 
 AddButtonToPage(pageTeleport, "Dịch Chuyển Đến Tiki Outpost", function()
-    _G.SenakaCharacterMove(_G.SenakaLocations.TikiBoat, _G.Config.TweenSpeed)
+    if _G.SenakaCharacterMove and _G.SenakaLocations and _G.Config then
+        _G.SenakaCharacterMove(_G.SenakaLocations.TikiBoat, _G.Config.TweenSpeed)
+    end
 end)
 
 AddButtonToPage(pageTeleport, "Dịch Chuyển Đến Hydra Island", function()
-    _G.SenakaCharacterMove(_G.SenakaLocations.Hydra, _G.Config.TweenSpeed)
+    if _G.SenakaCharacterMove and _G.SenakaLocations and _G.Config then
+        _G.SenakaCharacterMove(_G.SenakaLocations.Hydra, _G.Config.TweenSpeed)
+    end
 end)
 
 AddButtonToPage(pageTeleport, "Dịch Chuyển Đến Spy NPC", function()
-    _G.SenakaCharacterMove(_G.SenakaLocations.SpyNpc, _G.Config.TweenSpeed)
+    if _G.SenakaCharacterMove and _G.SenakaLocations and _G.Config then
+        _G.SenakaCharacterMove(_G.SenakaLocations.SpyNpc, _G.Config.TweenSpeed)
+    end
 end)
 
 local iconInputFrame = Instance.new("Frame")
@@ -716,7 +774,7 @@ iconTextBox.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 iconTextBox.Position = UDim2.new(0, 10, 0, 24)
 iconTextBox.Size = UDim2.new(1, -20, 0, 22)
 iconTextBox.Font = Enum.Font.SourceSans
-iconTextBox.Text = _G.Config.CustomIconId
+iconTextBox.Text = (_G.Config and _G.Config.CustomIconId) or "rbxassetid://130284374965787"
 iconTextBox.TextColor3 = Color3.fromRGB(255, 200, 0)
 iconTextBox.TextSize = 11
 local boxC = Instance.new("UICorner")
@@ -725,7 +783,7 @@ boxC.Parent = iconTextBox
 
 iconTextBox.FocusLost:Connect(function(enterPressed)
     if enterPressed then
-        _G.Config.CustomIconId = iconTextBox.Text
-        ToggleBtn.Image = _G.Config.CustomIconId
+        if _G.Config then _G.Config.CustomIconId = iconTextBox.Text end
+        ToggleBtn.Image = iconTextBox.Text
     end
 end)
