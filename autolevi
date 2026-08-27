@@ -118,10 +118,12 @@ local function FindAndInteractBoatDealer()
     if tick() - lastBuyTime < 10 then return end
     
     local dealerPart = nil
+    
+    -- Quét toàn bộ workspace để tìm NPC bán thuyền phù hợp nhất với tên thuyền hoặc tên Dealer
     for _, obj in pairs(workspace:GetDescendants()) do
         if obj:IsA("Model") then
             local nameLower = obj.Name:lower()
-            if nameLower:find("boat dealer") or nameLower:find("boatdealer") or nameLower:find("dealer") then
+            if nameLower:find("boat dealer") or nameLower:find("boatdealer") or nameLower:find("dealer") or nameLower:find("npc") then
                 if obj:FindFirstChild("HumanoidRootPart") then
                     dealerPart = obj.HumanoidRootPart
                     break
@@ -130,11 +132,12 @@ local function FindAndInteractBoatDealer()
         end
     end
     
+    -- Nếu không tìm thấy qua tên, quét tìm các NPC đứng quanh khu vực Tiki Outpost hoặc bến tàu
     if not dealerPart then
         for _, obj in pairs(workspace:GetChildren()) do
             if obj:IsA("Model") and obj:FindFirstChild("HumanoidRootPart") and obj:FindFirstChild("Humanoid") then
                 local dist = (obj.HumanoidRootPart.Position - _G.SenakaLocations.TikiBoat.Position).Magnitude
-                if dist < 300 then
+                if dist < 400 then
                     dealerPart = obj.HumanoidRootPart
                     break
                 end
@@ -144,14 +147,28 @@ local function FindAndInteractBoatDealer()
 
     local char = LocalPlayer.Character
     local root = char and char:FindFirstChild("HumanoidRootPart")
+    
     if dealerPart and root then
         if (dealerPart.Position - root.Position).Magnitude > 10 then
             _G.SenakaCharacterMove(dealerPart.CFrame * CFrame.new(0, 3, 3), _G.Config.TweenSpeed)
             task.wait(0.5)
         end
+    else
+        -- Mặc định bay về Tiki Outpost nếu không thấy NPC nào gần đó
+        _G.SenakaCharacterMove(_G.SenakaLocations.TikiBoat, _G.Config.TweenSpeed)
+        task.wait(0.5)
     end
 
-    pcall(function() ReplicatedStorage.Remotes.CommF_:InvokeServer("BuyBoat", _G.Config.SelectedBoat or "Dinghy") end)
+    -- Gửi lệnh mua đúng tên thuyền được nhập trong giao diện (SelectedBoat)
+    local chosenBoat = _G.Config.SelectedBoat
+    if not chosenBoat or chosenBoat == "" then
+        chosenBoat = "Dinghy"
+    end
+
+    pcall(function() 
+        ReplicatedStorage.Remotes.CommF_:InvokeServer("BuyBoat", chosenBoat) 
+    end)
+    
     lastBuyTime = tick()
     task.wait(3)
 end
@@ -230,6 +247,7 @@ task.spawn(function()
     end
 end)
 
+-- Luồng kích hoạt Tộc V3 hoạt động ổn định liên tục
 task.spawn(function() 
     while task.wait(0.5) do 
         if _G.Config.AutoV3 then 
