@@ -520,7 +520,7 @@ local function ShowNotification(text)
     task.spawn(function()
         local notifBox = Instance.new("Frame")
         notifBox.Parent = NotificationContainer
-        notifBox.BackgroundColor3 = Color3.fromRGB(20, 22, 28)
+        notifBox.BackgroundColor3 = Color3.fromRGB(24, 22, 15)
         notifBox.BorderSizePixel = 0
         notifBox.Size = UDim2.new(1, 0, 0, 42)
         notifBox.Position = UDim2.new(1, 50, 0, 0)
@@ -530,7 +530,7 @@ local function ShowNotification(text)
         corner.Parent = notifBox
 
         local stroke = Instance.new("UIStroke")
-        stroke.Color = Color3.fromRGB(80, 120, 255)
+        stroke.Color = Color3.fromRGB(255, 200, 0)
         stroke.Thickness = 1
         stroke.Parent = notifBox
 
@@ -541,7 +541,7 @@ local function ShowNotification(text)
         label.Size = UDim2.new(1, -24, 1, 0)
         label.Font = Enum.Font.GothamMedium
         label.Text = text
-        label.TextColor3 = Color3.fromRGB(240, 240, 250)
+        label.TextColor3 = Color3.fromRGB(255, 245, 210)
         label.TextSize = 12
         label.TextXAlignment = Enum.TextXAlignment.Left
 
@@ -560,14 +560,14 @@ end
 
 task.spawn(function()
     task.wait(1)
-    ShowNotification("SENAKA HUB 💠 Loaded!")
+    ShowNotification("SENAKA HUB 🍋 Loaded!")
 end)
 
 local ToggleBtn = Instance.new("ImageButton")
 ToggleBtn.Name = "ToggleBtn"
 ToggleBtn.Parent = ScreenGui
-ToggleBtn.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
-ToggleBtn.BorderColor3 = Color3.fromRGB(0, 170, 255)
+ToggleBtn.BackgroundColor3 = Color3.fromRGB(25, 22, 15)
+ToggleBtn.BorderColor3 = Color3.fromRGB(255, 200, 0)
 ToggleBtn.Position = UDim2.new(0, 20, 0, 140)
 ToggleBtn.Size = UDim2.new(0, 48, 0, 48)
 ToggleBtn.Image = (_G.Config and _G.Config.CustomIconId) or "rbxassetid://130284374965787"
@@ -579,7 +579,7 @@ BtnCorner.Parent = ToggleBtn
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
 MainFrame.Parent = ScreenGui
-MainFrame.BackgroundColor3 = Color3.fromRGB(15, 17, 23)
+MainFrame.BackgroundColor3 = Color3.fromRGB(18, 16, 12)
 MainFrame.BorderSizePixel = 0
 MainFrame.Position = UDim2.new(0.5, -250, 0.5, -180)
 MainFrame.Size = UDim2.new(0, 500, 0, 360)
@@ -589,7 +589,7 @@ MainCorner.CornerRadius = UDim.new(0, 12)
 MainCorner.Parent = MainFrame
 
 local MainStroke = Instance.new("UIStroke")
-MainStroke.Color = Color3.fromRGB(45, 50, 65)
+MainStroke.Color = Color3.fromRGB(75, 60, 20)
 MainStroke.Thickness = 1.5
 MainStroke.Parent = MainFrame
 
@@ -602,22 +602,22 @@ local TitleLabel = Instance.new("TextLabel")
 TitleLabel.Parent = TopBar
 TitleLabel.BackgroundTransparency = 1
 TitleLabel.Position = UDim2.new(0, 16, 0, 0)
-TitleLabel.Size = UDim2.new(0, 300, 1, 0)
+TitleLabel.Size = UDim2.new(0, 400, 1, 0)
 TitleLabel.Font = Enum.Font.GothamBold
-TitleLabel.Text = "SENAKA HUB 💠 <font color=\"#5078FF\">LEVIATHAN</font>"
+TitleLabel.Text = "SENAKA HUB 🍋 - <font color=\"#FFC800\">KAITUN LEVIATHAN</font> By PAIN"
 TitleLabel.RichText = true
 TitleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-TitleLabel.TextSize = 14
+TitleLabel.TextSize = 13
 TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
 
 local CloseBtn = Instance.new("TextButton")
 CloseBtn.Parent = TopBar
-CloseBtn.BackgroundColor3 = Color3.fromRGB(25, 28, 38)
+CloseBtn.BackgroundColor3 = Color3.fromRGB(30, 26, 18)
 CloseBtn.Position = UDim2.new(1, -36, 0.5, -12)
 CloseBtn.Size = UDim2.new(0, 24, 0, 24)
 CloseBtn.Font = Enum.Font.GothamBold
 CloseBtn.Text = "×"
-CloseBtn.TextColor3 = Color3.fromRGB(160, 165, 180)
+CloseBtn.TextColor3 = Color3.fromRGB(200, 180, 130)
 CloseBtn.TextSize = 18
 
 local CloseCorner = Instance.new("UICorner")
@@ -629,7 +629,7 @@ ToggleBtn.MouseButton1Click:Connect(function() MainFrame.Visible = not MainFrame
 
 local TabBar = Instance.new("Frame")
 TabBar.Parent = MainFrame
-TabBar.BackgroundColor3 = Color3.fromRGB(22, 25, 35)
+TabBar.BackgroundColor3 = Color3.fromRGB(28, 24, 16)
 TabBar.Position = UDim2.new(0, 16, 0, 45)
 TabBar.Size = UDim2.new(1, -32, 0, 36)
 
@@ -662,7 +662,7 @@ local function CreatePage(name)
     scroller.CanvasSize = UDim2.new(0, 0, 0, 0)
     scroller.AutomaticCanvasSize = Enum.AutomaticSize.Y
     scroller.ScrollBarThickness = 2
-    scroller.ScrollBarImageColor3 = Color3.fromRGB(80, 120, 255)
+    scroller.ScrollBarImageColor3 = Color3.fromRGB(255, 200, 0)
     scroller.Visible = false
 
     local layout = Instance.new("UIListLayout")
@@ -685,7 +685,7 @@ local function CreateTabButton(text, targetPage)
     btn.Size = UDim2.new(0.5, -2, 1, 0)
     btn.Font = Enum.Font.GothamBold
     btn.Text = text
-    btn.TextColor3 = Color3.fromRGB(130, 135, 150)
+    btn.TextColor3 = Color3.fromRGB(160, 145, 110)
     btn.TextSize = 12
 
     local btnCorner = Instance.new("UICorner")
@@ -694,20 +694,20 @@ local function CreateTabButton(text, targetPage)
 
     if targetPage == pageMain then
         btn.BackgroundTransparency = 0
-        btn.BackgroundColor3 = Color3.fromRGB(35, 40, 55)
-        btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        btn.BackgroundColor3 = Color3.fromRGB(45, 38, 22)
+        btn.TextColor3 = Color3.fromRGB(255, 230, 150)
     end
 
     btn.MouseButton1Click:Connect(function()
         for _, p in pairs(Pages) do p.Visible = false end
         for _, b in pairs(TabButtons) do
             b.BackgroundTransparency = 1
-            b.TextColor3 = Color3.fromRGB(130, 135, 150)
+            b.TextColor3 = Color3.fromRGB(160, 145, 110)
         end
         targetPage.Visible = true
         btn.BackgroundTransparency = 0
-        btn.BackgroundColor3 = Color3.fromRGB(35, 40, 55)
-        btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        btn.BackgroundColor3 = Color3.fromRGB(45, 38, 22)
+        btn.TextColor3 = Color3.fromRGB(255, 230, 150)
     end)
 
     table.insert(TabButtons, btn)
@@ -718,7 +718,7 @@ CreateTabButton("Teleports", pageTeleport)
 local function AddToggleToPage(page, title, defaultVal, callback)
     local frame = Instance.new("Frame")
     frame.Parent = page
-    frame.BackgroundColor3 = Color3.fromRGB(22, 25, 35)
+    frame.BackgroundColor3 = Color3.fromRGB(28, 24, 16)
     frame.Size = UDim2.new(1, -6, 0, 42)
 
     local corner = Instance.new("UICorner")
@@ -732,13 +732,13 @@ local function AddToggleToPage(page, title, defaultVal, callback)
     label.Size = UDim2.new(1, -70, 1, 0)
     label.Font = Enum.Font.GothamMedium
     label.Text = title
-    label.TextColor3 = Color3.fromRGB(220, 225, 240)
+    label.TextColor3 = Color3.fromRGB(240, 230, 200)
     label.TextSize = 12
     label.TextXAlignment = Enum.TextXAlignment.Left
 
     local switchBg = Instance.new("Frame")
     switchBg.Parent = frame
-    switchBg.BackgroundColor3 = defaultVal and Color3.fromRGB(80, 120, 255) or Color3.fromRGB(35, 40, 50)
+    switchBg.BackgroundColor3 = defaultVal and Color3.fromRGB(255, 200, 0) or Color3.fromRGB(45, 40, 30)
     switchBg.Position = UDim2.new(1, -48, 0.5, -11)
     switchBg.Size = UDim2.new(0, 38, 0, 22)
 
@@ -765,7 +765,7 @@ local function AddToggleToPage(page, title, defaultVal, callback)
     local val = defaultVal
     btn.MouseButton1Click:Connect(function()
         val = not val
-        TweenService:Create(switchBg, TweenInfo.new(0.2), {BackgroundColor3 = val and Color3.fromRGB(80, 120, 255) or Color3.fromRGB(35, 40, 50)}):Play()
+        TweenService:Create(switchBg, TweenInfo.new(0.2), {BackgroundColor3 = val and Color3.fromRGB(255, 200, 0) or Color3.fromRGB(45, 40, 30)}):Play()
         TweenService:Create(circle, TweenInfo.new(0.2), {Position = val and UDim2.new(1, -19, 0.5, -8) or UDim2.new(0, 3, 0.5, -8)}):Play()
         pcall(function() callback(val) end)
     end)
@@ -774,11 +774,11 @@ end
 local function AddButtonToPage(page, title, callback)
     local btn = Instance.new("TextButton")
     btn.Parent = page
-    btn.BackgroundColor3 = Color3.fromRGB(22, 25, 35)
+    btn.BackgroundColor3 = Color3.fromRGB(28, 24, 16)
     btn.Size = UDim2.new(1, -6, 0, 40)
     btn.Font = Enum.Font.GothamBold
     btn.Text = title
-    btn.TextColor3 = Color3.fromRGB(80, 120, 255)
+    btn.TextColor3 = Color3.fromRGB(255, 200, 0)
     btn.TextSize = 12
 
     local corner = Instance.new("UICorner")
@@ -786,7 +786,7 @@ local function AddButtonToPage(page, title, callback)
     corner.Parent = btn
 
     local stroke = Instance.new("UIStroke")
-    stroke.Color = Color3.fromRGB(35, 40, 55)
+    stroke.Color = Color3.fromRGB(55, 45, 25)
     stroke.Thickness = 1
     stroke.Parent = btn
 
@@ -798,7 +798,7 @@ local cfg = _G.Config or {}
 local function CreateTextBox(page, labelText, defaultText, callbackNum)
     local frame = Instance.new("Frame")
     frame.Parent = page
-    frame.BackgroundColor3 = Color3.fromRGB(22, 25, 35)
+    frame.BackgroundColor3 = Color3.fromRGB(28, 24, 16)
     frame.Size = UDim2.new(1, -6, 0, 54)
 
     local corner = Instance.new("UICorner")
@@ -812,18 +812,18 @@ local function CreateTextBox(page, labelText, defaultText, callbackNum)
     label.Size = UDim2.new(1, -24, 0, 18)
     label.Font = Enum.Font.GothamMedium
     label.Text = labelText
-    label.TextColor3 = Color3.fromRGB(160, 165, 180)
+    label.TextColor3 = Color3.fromRGB(180, 165, 130)
     label.TextSize = 11
     label.TextXAlignment = Enum.TextXAlignment.Left
 
     local textBox = Instance.new("TextBox")
     textBox.Parent = frame
-    textBox.BackgroundColor3 = Color3.fromRGB(15, 17, 23)
+    textBox.BackgroundColor3 = Color3.fromRGB(18, 16, 12)
     textBox.Position = UDim2.new(0, 12, 0, 26)
     textBox.Size = UDim2.new(1, -24, 0, 22)
     textBox.Font = Enum.Font.GothamBold
     textBox.Text = tostring(defaultText)
-    textBox.TextColor3 = Color3.fromRGB(80, 120, 255)
+    textBox.TextColor3 = Color3.fromRGB(255, 200, 0)
     textBox.TextSize = 11
 
     local boxC = Instance.new("UICorner")
