@@ -3,6 +3,7 @@ local TweenService = game:GetService("TweenService")
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local Lighting = game:GetService("Lighting")
+local CoreGui = game:GetService("CoreGui")
 local LocalPlayer = Players.LocalPlayer
 
 task.spawn(function()
@@ -92,6 +93,7 @@ _G.SenakaCharacterMove = function(targetCFrame, speed)
     if noclipConn then noclipConn:Disconnect() end
     hum.PlatformStand = false
 end
+
 local VirtualInputManager = game:GetService("VirtualInputManager")
 
 local function GetPlayerBoat()
@@ -227,9 +229,7 @@ end)
 task.spawn(function() 
     while task.wait(0.5) do 
         if _G.Config.AutoV3 then 
-            pcall(function() 
-                ReplicatedStorage.Remotes.CommF_:InvokeServer("ActivateAbility")
-            end) 
+            pcall(function() ReplicatedStorage.Remotes.CommF_:InvokeServer("ActivateAbility") end) 
         end 
     end 
 end)
@@ -290,7 +290,6 @@ task.spawn(function()
         end
     end
 end)
-
 local boatFlightState = "Idle" 
 
 task.spawn(function()
@@ -476,10 +475,8 @@ task.spawn(function()
         end
     end
 end)
-local CoreGui = game:GetService("CoreGui")
-
 pcall(function()
-    if CoreGui:FindFirstChild("BananaHubStyleUI") then CoreGui.BananaHubStyleUI:Destroy() end
+    if CoreGui:FindFirstChild("SenakaAzureStyleUI") then CoreGui.SenakaAzureStyleUI:Destroy() end
     if CoreGui:FindFirstChild("SenakaCyberUI") then CoreGui.SenakaCyberUI:Destroy() end
 end)
 
@@ -493,134 +490,73 @@ pcall(function()
 end)
 
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "SenakaCyberUI"
+ScreenGui.Name = "SenakaAzureStyleUI"
 ScreenGui.Parent = targetParent
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 ScreenGui.ResetOnSpawn = false
 
-local NotificationGui = Instance.new("ScreenGui")
-NotificationGui.Name = "SenakaNotificationGui"
-NotificationGui.Parent = targetParent
-NotificationGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-NotificationGui.ResetOnSpawn = false
-
-local NotificationContainer = Instance.new("Frame")
-NotificationContainer.Parent = NotificationGui
-NotificationContainer.BackgroundTransparency = 1
-NotificationContainer.Position = UDim2.new(1, -270, 0, 20)
-NotificationContainer.Size = UDim2.new(0, 250, 1, -40)
-
-local UIListLayoutNotif = Instance.new("UIListLayout")
-UIListLayoutNotif.Parent = NotificationContainer
-UIListLayoutNotif.SortOrder = Enum.SortOrder.LayoutOrder
-UIListLayoutNotif.VerticalAlignment = Enum.VerticalAlignment.Bottom
-UIListLayoutNotif.Padding = UDim.new(0, 8)
-
-local function ShowNotification(text)
-    task.spawn(function()
-        local notifBox = Instance.new("Frame")
-        notifBox.Parent = NotificationContainer
-        notifBox.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-        notifBox.BorderSizePixel = 0
-        notifBox.Size = UDim2.new(1, 0, 0, 42)
-        notifBox.Position = UDim2.new(1, 50, 0, 0)
-
-        local corner = Instance.new("UICorner")
-        corner.CornerRadius = UDim.new(0, 6)
-        corner.Parent = notifBox
-
-        local stroke = Instance.new("UIStroke")
-        stroke.Color = Color3.fromRGB(0, 150, 255)
-        stroke.Thickness = 1.5
-        stroke.Parent = notifBox
-
-        local label = Instance.new("TextLabel")
-        label.Parent = notifBox
-        label.BackgroundTransparency = 1
-        label.Position = UDim2.new(0, 12, 0, 0)
-        label.Size = UDim2.new(1, -24, 1, 0)
-        label.Font = Enum.Font.GothamMedium
-        label.Text = text
-        label.TextColor3 = Color3.fromRGB(240, 240, 240)
-        label.TextSize = 12
-        label.TextXAlignment = Enum.TextXAlignment.Left
-
-        local tweenIn = TweenService:Create(notifBox, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Position = UDim2.new(0, 0, 0, 0)})
-        tweenIn:Play()
-        tweenIn.Completed:Wait()
-
-        task.wait(3)
-
-        local tweenOut = TweenService:Create(notifBox, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {Position = UDim2.new(1, 50, 0, 0)})
-        tweenOut:Play()
-        tweenOut.Completed:Wait()
-        notifBox:Destroy()
-    end)
-end
-
-task.spawn(function()
-    task.wait(1)
-    ShowNotification("SENAKA HUB Loaded!")
-end)
-
 local ToggleBtn = Instance.new("ImageButton")
 ToggleBtn.Name = "ToggleBtn"
 ToggleBtn.Parent = ScreenGui
-ToggleBtn.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-ToggleBtn.BorderColor3 = Color3.fromRGB(0, 150, 255)
+ToggleBtn.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
 ToggleBtn.Position = UDim2.new(0, 20, 0, 140)
-ToggleBtn.Size = UDim2.new(0, 48, 0, 48)
+ToggleBtn.Size = UDim2.new(0, 50, 0, 50)
 ToggleBtn.Image = (_G.Config and _G.Config.CustomIconId) or "rbxassetid://130284374965787"
 
 local BtnCorner = Instance.new("UICorner")
 BtnCorner.CornerRadius = UDim.new(1, 0)
 BtnCorner.Parent = ToggleBtn
 
+local BtnStroke = Instance.new("UIStroke")
+BtnStroke.Color = Color3.fromRGB(0, 162, 255)
+BtnStroke.Thickness = 2
+BtnStroke.Parent = ToggleBtn
+
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
 MainFrame.Parent = ScreenGui
-MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+MainFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
 MainFrame.BorderSizePixel = 0
-MainFrame.Position = UDim2.new(0.5, -275, 0.5, -175)
-MainFrame.Size = UDim2.new(0, 550, 0, 350)
+MainFrame.Position = UDim2.new(0.5, -280, 0.5, -180)
+MainFrame.Size = UDim2.new(0, 560, 0, 360)
 
 local MainCorner = Instance.new("UICorner")
-MainCorner.CornerRadius = UDim.new(0, 8)
+MainCorner.CornerRadius = UDim.new(0, 10)
 MainCorner.Parent = MainFrame
 
 local MainStroke = Instance.new("UIStroke")
-MainStroke.Color = Color3.fromRGB(40, 40, 40)
+MainStroke.Color = Color3.fromRGB(45, 45, 55)
 MainStroke.Thickness = 1.5
 MainStroke.Parent = MainFrame
 
 local Sidebar = Instance.new("Frame")
 Sidebar.Name = "Sidebar"
 Sidebar.Parent = MainFrame
-Sidebar.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+Sidebar.BackgroundColor3 = Color3.fromRGB(13, 13, 17)
 Sidebar.BorderSizePixel = 0
-Sidebar.Size = UDim2.new(0, 140, 1, 0)
+Sidebar.Size = UDim2.new(0, 150, 1, 0)
 
 local SidebarCorner = Instance.new("UICorner")
-SidebarCorner.CornerRadius = UDim.new(0, 8)
+SidebarCorner.CornerRadius = UDim.new(0, 10)
 SidebarCorner.Parent = Sidebar
 
 local SidebarCover = Instance.new("Frame")
 SidebarCover.Parent = Sidebar
-SidebarCover.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+SidebarCover.BackgroundColor3 = Color3.fromRGB(13, 13, 17)
 SidebarCover.BorderSizePixel = 0
-SidebarCover.Position = UDim2.new(1, -5, 0, 0)
-SidebarCover.Size = UDim2.new(0, 5, 1, 0)
+SidebarCover.Position = UDim2.new(1, -6, 0, 0)
+SidebarCover.Size = UDim2.new(0, 6, 1, 0)
 
 local TitleLabel = Instance.new("TextLabel")
 TitleLabel.Parent = Sidebar
 TitleLabel.BackgroundTransparency = 1
-TitleLabel.Position = UDim2.new(0, 0, 0, 10)
+TitleLabel.Position = UDim2.new(0, 0, 0, 14)
 TitleLabel.Size = UDim2.new(1, 0, 0, 30)
 TitleLabel.Font = Enum.Font.GothamBold
-TitleLabel.Text = "<font color=\"#0096FF\">SENAKA</font> HUB"
+TitleLabel.Text = "AZURE <font color=\"#00A2FF\">HUB</font>"
 TitleLabel.RichText = true
 TitleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-TitleLabel.TextSize = 14
+TitleLabel.TextSize = 16
 TitleLabel.TextXAlignment = Enum.TextXAlignment.Center
 
 local TabListLayout = Instance.new("UIListLayout")
@@ -633,24 +569,28 @@ TabListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 local TabSpacer = Instance.new("Frame")
 TabSpacer.Parent = Sidebar
 TabSpacer.BackgroundTransparency = 1
-TabSpacer.Size = UDim2.new(1, 0, 0, 40)
+TabSpacer.Size = UDim2.new(1, 0, 0, 42)
 TabSpacer.LayoutOrder = 0
 
 local ContentContainer = Instance.new("Frame")
 ContentContainer.Parent = MainFrame
 ContentContainer.BackgroundTransparency = 1
-ContentContainer.Position = UDim2.new(0, 150, 0, 35)
-ContentContainer.Size = UDim2.new(1, -160, 1, -45)
+ContentContainer.Position = UDim2.new(0, 160, 0, 12)
+ContentContainer.Size = UDim2.new(1, -170, 1, -24)
 
 local CloseBtn = Instance.new("TextButton")
 CloseBtn.Parent = MainFrame
-CloseBtn.BackgroundTransparency = 1
-CloseBtn.Position = UDim2.new(1, -30, 0, 5)
-CloseBtn.Size = UDim2.new(0, 25, 0, 25)
+CloseBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 38)
+CloseBtn.Position = UDim2.new(1, -32, 0, 12)
+CloseBtn.Size = UDim2.new(0, 24, 0, 24)
 CloseBtn.Font = Enum.Font.GothamBold
-CloseBtn.Text = "X"
-CloseBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
-CloseBtn.TextSize = 14
+CloseBtn.Text = "✕"
+CloseBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
+CloseBtn.TextSize = 12
+
+local CloseCorner = Instance.new("UICorner")
+CloseCorner.CornerRadius = UDim.new(0, 6)
+CloseCorner.Parent = CloseBtn
 
 CloseBtn.MouseButton1Click:Connect(function() MainFrame.Visible = false end)
 ToggleBtn.MouseButton1Click:Connect(function() MainFrame.Visible = not MainFrame.Visible end)
@@ -667,8 +607,8 @@ local function CreatePage(name)
     scroller.Size = UDim2.new(1, 0, 1, 0)
     scroller.CanvasSize = UDim2.new(0, 0, 0, 0)
     scroller.AutomaticCanvasSize = Enum.AutomaticSize.Y
-    scroller.ScrollBarThickness = 3
-    scroller.ScrollBarImageColor3 = Color3.fromRGB(0, 150, 255)
+    scroller.ScrollBarThickness = 2
+    scroller.ScrollBarImageColor3 = Color3.fromRGB(0, 162, 255)
     scroller.Visible = false
 
     local layout = Instance.new("UIListLayout")
@@ -687,33 +627,34 @@ pageMain.Visible = true
 local function CreateTabButton(text, targetPage, order)
     local btn = Instance.new("TextButton")
     btn.Parent = Sidebar
-    btn.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
+    btn.BackgroundColor3 = Color3.fromRGB(0, 162, 255)
     btn.BackgroundTransparency = 1
-    btn.Size = UDim2.new(1, -16, 0, 32)
+    btn.Size = UDim2.new(1, -16, 0, 36)
     btn.Font = Enum.Font.GothamMedium
-    btn.Text = text
-    btn.TextColor3 = Color3.fromRGB(150, 150, 150)
+    btn.Text = "   " .. text
+    btn.TextColor3 = Color3.fromRGB(140, 140, 160)
     btn.TextSize = 13
+    btn.TextXAlignment = Enum.TextXAlignment.Left
     btn.LayoutOrder = order
 
     local btnCorner = Instance.new("UICorner")
-    btnCorner.CornerRadius = UDim.new(0, 6)
+    btnCorner.CornerRadius = UDim.new(0, 8)
     btnCorner.Parent = btn
 
     if targetPage == pageMain then
-        btn.BackgroundTransparency = 0.9
-        btn.TextColor3 = Color3.fromRGB(0, 150, 255)
+        btn.BackgroundTransparency = 0.85
+        btn.TextColor3 = Color3.fromRGB(0, 162, 255)
     end
 
     btn.MouseButton1Click:Connect(function()
         for _, p in pairs(Pages) do p.Visible = false end
         for _, b in pairs(TabButtons) do
             b.BackgroundTransparency = 1
-            b.TextColor3 = Color3.fromRGB(150, 150, 150)
+            b.TextColor3 = Color3.fromRGB(140, 140, 160)
         end
         targetPage.Visible = true
-        btn.BackgroundTransparency = 0.9
-        btn.TextColor3 = Color3.fromRGB(0, 150, 255)
+        btn.BackgroundTransparency = 0.85
+        btn.TextColor3 = Color3.fromRGB(0, 162, 255)
     end)
 
     table.insert(TabButtons, btn)
@@ -721,14 +662,15 @@ end
 
 CreateTabButton("Main Features", pageMain, 1)
 CreateTabButton("Teleports", pageTeleport, 2)
+
 local function AddToggleToPage(page, title, defaultVal, callback)
     local frame = Instance.new("Frame")
     frame.Parent = page
-    frame.BackgroundColor3 = Color3.fromRGB(28, 28, 28)
-    frame.Size = UDim2.new(1, -6, 0, 42)
+    frame.BackgroundColor3 = Color3.fromRGB(24, 24, 30)
+    frame.Size = UDim2.new(1, -4, 0, 42)
 
     local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 6)
+    corner.CornerRadius = UDim.new(0, 8)
     corner.Parent = frame
 
     local label = Instance.new("TextLabel")
@@ -738,15 +680,15 @@ local function AddToggleToPage(page, title, defaultVal, callback)
     label.Size = UDim2.new(1, -70, 1, 0)
     label.Font = Enum.Font.GothamMedium
     label.Text = title
-    label.TextColor3 = Color3.fromRGB(220, 220, 220)
+    label.TextColor3 = Color3.fromRGB(210, 210, 220)
     label.TextSize = 13
     label.TextXAlignment = Enum.TextXAlignment.Left
 
     local switchBg = Instance.new("Frame")
     switchBg.Parent = frame
-    switchBg.BackgroundColor3 = defaultVal and Color3.fromRGB(0, 150, 255) or Color3.fromRGB(45, 45, 45)
+    switchBg.BackgroundColor3 = defaultVal and Color3.fromRGB(0, 162, 255) or Color3.fromRGB(40, 40, 50)
     switchBg.Position = UDim2.new(1, -48, 0.5, -11)
-    switchBg.Size = UDim2.new(0, 38, 0, 22)
+    switchBg.Size = UDim2.new(0, 40, 0, 22)
 
     local switchCorner = Instance.new("UICorner")
     switchCorner.CornerRadius = UDim.new(1, 0)
@@ -771,7 +713,7 @@ local function AddToggleToPage(page, title, defaultVal, callback)
     local val = defaultVal
     btn.MouseButton1Click:Connect(function()
         val = not val
-        TweenService:Create(switchBg, TweenInfo.new(0.2), {BackgroundColor3 = val and Color3.fromRGB(0, 150, 255) or Color3.fromRGB(45, 45, 45)}):Play()
+        TweenService:Create(switchBg, TweenInfo.new(0.2), {BackgroundColor3 = val and Color3.fromRGB(0, 162, 255) or Color3.fromRGB(40, 40, 50)}):Play()
         TweenService:Create(circle, TweenInfo.new(0.2), {Position = val and UDim2.new(1, -19, 0.5, -8) or UDim2.new(0, 3, 0.5, -8)}):Play()
         pcall(function() callback(val) end)
     end)
@@ -780,35 +722,34 @@ end
 local function AddButtonToPage(page, title, callback)
     local btn = Instance.new("TextButton")
     btn.Parent = page
-    btn.BackgroundColor3 = Color3.fromRGB(28, 28, 28)
-    btn.Size = UDim2.new(1, -6, 0, 40)
+    btn.BackgroundColor3 = Color3.fromRGB(24, 24, 30)
+    btn.Size = UDim2.new(1, -4, 0, 40)
     btn.Font = Enum.Font.GothamMedium
     btn.Text = title
-    btn.TextColor3 = Color3.fromRGB(240, 240, 240)
+    btn.TextColor3 = Color3.fromRGB(220, 220, 230)
     btn.TextSize = 13
 
     local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 6)
+    corner.CornerRadius = UDim.new(0, 8)
     corner.Parent = btn
 
     local stroke = Instance.new("UIStroke")
-    stroke.Color = Color3.fromRGB(0, 150, 255)
+    stroke.Color = Color3.fromRGB(0, 162, 255)
+    stroke.Transparency = 0.5
     stroke.Thickness = 1
     stroke.Parent = btn
 
     btn.MouseButton1Click:Connect(function() pcall(callback) end)
 end
 
-local cfg = _G.Config or {}
-
 local function CreateTextBox(page, labelText, defaultText, callbackNum)
     local frame = Instance.new("Frame")
     frame.Parent = page
-    frame.BackgroundColor3 = Color3.fromRGB(28, 28, 28)
-    frame.Size = UDim2.new(1, -6, 0, 54)
+    frame.BackgroundColor3 = Color3.fromRGB(24, 24, 30)
+    frame.Size = UDim2.new(1, -4, 0, 56)
 
     local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 6)
+    corner.CornerRadius = UDim.new(0, 8)
     corner.Parent = frame
 
     local label = Instance.new("TextLabel")
@@ -818,26 +759,26 @@ local function CreateTextBox(page, labelText, defaultText, callbackNum)
     label.Size = UDim2.new(1, -24, 0, 18)
     label.Font = Enum.Font.GothamMedium
     label.Text = labelText
-    label.TextColor3 = Color3.fromRGB(180, 180, 180)
+    label.TextColor3 = Color3.fromRGB(160, 160, 175)
     label.TextSize = 12
     label.TextXAlignment = Enum.TextXAlignment.Left
 
     local textBox = Instance.new("TextBox")
     textBox.Parent = frame
-    textBox.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+    textBox.BackgroundColor3 = Color3.fromRGB(15, 15, 18)
     textBox.Position = UDim2.new(0, 12, 0, 26)
-    textBox.Size = UDim2.new(1, -24, 0, 22)
+    textBox.Size = UDim2.new(1, -24, 0, 24)
     textBox.Font = Enum.Font.GothamMedium
     textBox.Text = tostring(defaultText)
-    textBox.TextColor3 = Color3.fromRGB(0, 150, 255)
+    textBox.TextColor3 = Color3.fromRGB(0, 162, 255)
     textBox.TextSize = 12
 
     local boxC = Instance.new("UICorner")
-    boxC.CornerRadius = UDim.new(0, 4)
+    boxC.CornerRadius = UDim.new(0, 6)
     boxC.Parent = textBox
     
     local boxStroke = Instance.new("UIStroke")
-    boxStroke.Color = Color3.fromRGB(45, 45, 45)
+    boxStroke.Color = Color3.fromRGB(45, 45, 60)
     boxStroke.Thickness = 1
     boxStroke.Parent = textBox
 
@@ -846,101 +787,81 @@ local function CreateTextBox(page, labelText, defaultText, callbackNum)
     end)
 end
 
-CreateTextBox(pageMain, "Nhập Tên Master (Chủ Thuyền):", (_G.Config and _G.Config.MasterName) or "bonbicuttay_999", function(txt)
+local cfg = _G.Config or {}
+
+CreateTextBox(pageMain, "Nhập Tên Master (Chủ Thuyền):", cfg.MasterName or "bonbicuttay_999", function(txt)
     if _G.Config then _G.Config.MasterName = txt end
-    ShowNotification("Cập nhật Master: " .. txt)
 end)
 
-CreateTextBox(pageMain, "SelectedBoat (Tên Thuyền Mua):", (_G.Config and _G.Config.SelectedBoat) or "Dinghy", function(txt)
+CreateTextBox(pageMain, "SelectedBoat (Tên Thuyền Mua):", cfg.SelectedBoat or "Dinghy", function(txt)
     if _G.Config then _G.Config.SelectedBoat = txt end
-    ShowNotification("Cập nhật Thuyền: " .. txt)
 end)
 
-CreateTextBox(pageMain, "TweenSpeed (Tốc Độ Nhân Vật):", (_G.Config and _G.Config.TweenSpeed) or 300, function(txt)
+CreateTextBox(pageMain, "TweenSpeed (Tốc Độ Nhân Vật):", cfg.TweenSpeed or 300, function(txt)
     local num = tonumber(txt)
-    if num and _G.Config then
-        _G.Config.TweenSpeed = num
-        ShowNotification("Cập nhật Tốc độ Tween: " .. tostring(num))
-    end
+    if num and _G.Config then _G.Config.TweenSpeed = num end
 end)
 
-CreateTextBox(pageMain, "BoatTweenSpeed (Tốc Độ Thuyền):", (_G.Config and _G.Config.BoatTweenSpeed) or 350, function(txt)
+CreateTextBox(pageMain, "BoatTweenSpeed (Tốc Độ Thuyền):", cfg.BoatTweenSpeed or 350, function(txt)
     local num = tonumber(txt)
-    if num and _G.Config then
-        _G.Config.BoatTweenSpeed = num
-        ShowNotification("Cập nhật Tốc độ Thuyền: " .. tostring(num))
-    end
+    if num and _G.Config then _G.Config.BoatTweenSpeed = num end
 end)
 
-CreateTextBox(pageMain, "AutoTravel (Tên đảo/vị trí muốn đến):", (_G.Config and _G.Config.AutoTravel) or "", function(txt)
+CreateTextBox(pageMain, "AutoTravel (Tên đảo/vị trí muốn đến):", cfg.AutoTravel or "", function(txt)
     if _G.Config then _G.Config.AutoTravel = txt end
-    ShowNotification("AutoTravel tới: " .. txt)
 end)
 
 AddToggleToPage(pageMain, "Role: Master (Chủ thuyền)", cfg.IsMaster or false, function(v) 
     if _G.Config then _G.Config.IsMaster = v end 
-    ShowNotification("Role Master: " .. tostring(v))
 end)
 AddToggleToPage(pageMain, "Role: Slave (Đi theo Master)", cfg.IsSlave or false, function(v) 
     if _G.Config then _G.Config.IsSlave = v end 
-    ShowNotification("Role Slave: " .. tostring(v))
 end)
 AddToggleToPage(pageMain, "Đứng Trên Mặt Nước", cfg.WaterWalk or false, function(v) 
     if _G.Config then _G.Config.WaterWalk = v end 
-    ShowNotification("Đứng Mặt Nước: " .. tostring(v))
 end)
 AddToggleToPage(pageMain, "Auto Buso (Haki Vũ Trang)", cfg.AutoBuso or false, function(v) 
     if _G.Config then _G.Config.AutoBuso = v end 
-    ShowNotification("Auto Buso: " .. tostring(v))
 end)
 AddToggleToPage(pageMain, "Auto Skill V3", cfg.AutoV3 or false, function(v) 
     if _G.Config then _G.Config.AutoV3 = v end 
-    ShowNotification("Auto Skill V3: " .. tostring(v))
 end)
 AddToggleToPage(pageMain, "Auto Skill V4", cfg.AutoV4 or false, function(v) 
     if _G.Config then _G.Config.AutoV4 = v end 
-    ShowNotification("Auto Skill V4: " .. tostring(v))
 end)
 AddToggleToPage(pageMain, "Tự Động Tránh Sea Event", cfg.AutoAvoidSeaEvent or false, function(v) 
     if _G.Config then _G.Config.AutoAvoidSeaEvent = v end 
-    ShowNotification("Tránh Sea Event: " .. tostring(v))
 end)
 AddToggleToPage(pageMain, "Auto Sanguine Art / Săn Boss", cfg.AutoGetSanguineArt or false, function(v) 
     if _G.Config then _G.Config.AutoGetSanguineArt = v end 
-    ShowNotification("Auto Sanguine: " .. tostring(v))
 end)
 AddToggleToPage(pageMain, "Kéo Tim Về Tiki", cfg.AutoPullHeartToTiki or false, function(v) 
     if _G.Config then
         _G.Config.AutoPullHeartToTiki = v 
         if v then _G.Config.AutoPullHeartToHydra = false end
     end
-    ShowNotification("Kéo Tim Tiki: " .. tostring(v))
 end)
 AddToggleToPage(pageMain, "Kéo Tim Về Hydra", cfg.AutoPullHeartToHydra or false, function(v) 
     if _G.Config then
         _G.Config.AutoPullHeartToHydra = v 
         if v then _G.Config.AutoPullHeartToTiki = false end
     end
-    ShowNotification("Kéo Tim Hydra: " .. tostring(v))
 end)
 
 AddButtonToPage(pageTeleport, "Dịch Chuyển Đến Tiki Outpost", function()
     if _G.SenakaCharacterMove and _G.SenakaLocations and _G.Config then
         _G.SenakaCharacterMove(_G.SenakaLocations.TikiBoat, _G.Config.TweenSpeed)
-        ShowNotification("Đang bay đến Tiki Outpost...")
     end
 end)
 
 AddButtonToPage(pageTeleport, "Dịch Chuyển Đến Hydra Island", function()
     if _G.SenakaCharacterMove and _G.SenakaLocations and _G.Config then
         _G.SenakaCharacterMove(_G.SenakaLocations.Hydra, _G.Config.TweenSpeed)
-        ShowNotification("Đang bay đến Hydra Island...")
     end
 end)
 
 AddButtonToPage(pageTeleport, "Dịch Chuyển Đến Spy NPC", function()
     if _G.SenakaCharacterMove and _G.SenakaLocations and _G.Config then
         _G.SenakaCharacterMove(_G.SenakaLocations.SpyNpc, _G.Config.TweenSpeed)
-        ShowNotification("Đang bay đến Spy NPC...")
     end
 end)
