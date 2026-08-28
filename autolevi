@@ -92,12 +92,7 @@ _G.SenakaCharacterMove = function(targetCFrame, speed)
     if noclipConn then noclipConn:Disconnect() end
     hum.PlatformStand = false
 end
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local TweenService = game:GetService("TweenService")
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
 local VirtualInputManager = game:GetService("VirtualInputManager")
-local LocalPlayer = Players.LocalPlayer
 
 local function GetPlayerBoat()
     local boatsFolder = workspace:FindFirstChild("Boats")
@@ -118,12 +113,10 @@ local function FindAndInteractBoatDealer()
     if tick() - lastBuyTime < 10 then return end
     
     local dealerPart = nil
-    
-    -- Quét toàn bộ workspace để tìm NPC bán thuyền phù hợp nhất với tên thuyền hoặc tên Dealer
     for _, obj in pairs(workspace:GetDescendants()) do
         if obj:IsA("Model") then
             local nameLower = obj.Name:lower()
-            if nameLower:find("boat dealer") or nameLower:find("boatdealer") or nameLower:find("dealer") or nameLower:find("npc") then
+            if nameLower:find("boat dealer") or nameLower:find("boatdealer") or nameLower:find("dealer") then
                 if obj:FindFirstChild("HumanoidRootPart") then
                     dealerPart = obj.HumanoidRootPart
                     break
@@ -132,12 +125,11 @@ local function FindAndInteractBoatDealer()
         end
     end
     
-    -- Nếu không tìm thấy qua tên, quét tìm các NPC đứng quanh khu vực Tiki Outpost hoặc bến tàu
     if not dealerPart then
         for _, obj in pairs(workspace:GetChildren()) do
             if obj:IsA("Model") and obj:FindFirstChild("HumanoidRootPart") and obj:FindFirstChild("Humanoid") then
                 local dist = (obj.HumanoidRootPart.Position - _G.SenakaLocations.TikiBoat.Position).Magnitude
-                if dist < 400 then
+                if dist < 300 then
                     dealerPart = obj.HumanoidRootPart
                     break
                 end
@@ -147,28 +139,14 @@ local function FindAndInteractBoatDealer()
 
     local char = LocalPlayer.Character
     local root = char and char:FindFirstChild("HumanoidRootPart")
-    
     if dealerPart and root then
         if (dealerPart.Position - root.Position).Magnitude > 10 then
             _G.SenakaCharacterMove(dealerPart.CFrame * CFrame.new(0, 3, 3), _G.Config.TweenSpeed)
             task.wait(0.5)
         end
-    else
-        -- Mặc định bay về Tiki Outpost nếu không thấy NPC nào gần đó
-        _G.SenakaCharacterMove(_G.SenakaLocations.TikiBoat, _G.Config.TweenSpeed)
-        task.wait(0.5)
     end
 
-    -- Gửi lệnh mua đúng tên thuyền được nhập trong giao diện (SelectedBoat)
-    local chosenBoat = _G.Config.SelectedBoat
-    if not chosenBoat or chosenBoat == "" then
-        chosenBoat = "Dinghy"
-    end
-
-    pcall(function() 
-        ReplicatedStorage.Remotes.CommF_:InvokeServer("BuyBoat", chosenBoat) 
-    end)
-    
+    pcall(function() ReplicatedStorage.Remotes.CommF_:InvokeServer("BuyBoat", _G.Config.SelectedBoat or "Dinghy") end)
     lastBuyTime = tick()
     task.wait(3)
 end
@@ -247,7 +225,6 @@ task.spawn(function()
     end
 end)
 
--- Luồng kích hoạt Tộc V3 hoạt động ổn định liên tục
 task.spawn(function() 
     while task.wait(0.5) do 
         if _G.Config.AutoV3 then 
@@ -425,7 +402,7 @@ task.spawn(function()
                                         elseif boatFlightState == "FlyingToSea" then
                                             if distanceToSea > 300 then
                                                 local highSeaTarget = CFrame.new(_G.SenakaLocations.SeaSearchCenter.Position.X, 150, _G.SenakaLocations.SeaSearchCenter.Position.Z)
-                                                local duration = (boatPrimary.Position - highSeaTarget.Position).Magnitude / _G.Config.BoatTweenSpeed
+                                                local duration = (boatPrimary.Position - highSeaTarget.Position).Magnitude / (_G.Config.BoatTweenSpeed or 350)
                                                 local seaTween = TweenService:Create(boatPrimary, TweenInfo.new(duration, Enum.EasingStyle.Linear), {CFrame = highSeaTarget})
                                                 seaTween:Play()
                                                 seaTween.Completed:Wait()
@@ -501,8 +478,6 @@ task.spawn(function()
     end
 end)
 local CoreGui = game:GetService("CoreGui")
-local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
 
 pcall(function()
     if CoreGui:FindFirstChild("BananaHubStyleUI") then
@@ -585,7 +560,6 @@ task.spawn(function()
     task.wait(1)
     ShowNotification("SENAKA HUB 🍋- KAITUN LEVIATHAN Loaded!")
 end)
-
 local ToggleBtn = Instance.new("ImageButton")
 ToggleBtn.Name = "ToggleBtn"
 ToggleBtn.Parent = ScreenGui
@@ -683,7 +657,7 @@ local function CreatePage(name)
     scroller.Active = true
     scroller.BackgroundTransparency = 1
     scroller.Size = UDim2.new(1, 0, 1, 0)
-    scroller.CanvasSize = UDim2.new(0, 0, 0, 750)
+    scroller.CanvasSize = UDim2.new(0, 0, 0, 1050)
     scroller.ScrollBarThickness = 4
     scroller.Visible = false
 
@@ -722,7 +696,6 @@ end
 
 CreateTabButton("Main Features", pageMain)
 CreateTabButton("Teleports", pageTeleport)
-
 local function AddToggleToPage(page, title, defaultVal, callback)
     local frame = Instance.new("Frame")
     frame.Parent = page
@@ -787,7 +760,6 @@ local function AddButtonToPage(page, title, callback)
 end
 
 local cfg = _G.Config or {}
-
 local masterInputFrame = Instance.new("Frame")
 masterInputFrame.Parent = pageMain
 masterInputFrame.BackgroundColor3 = Color3.fromRGB(28, 28, 28)
@@ -841,7 +813,7 @@ boatLabel.BackgroundTransparency = 1
 boatLabel.Position = UDim2.new(0, 10, 0, 2)
 boatLabel.Size = UDim2.new(1, -20, 0, 20)
 boatLabel.Font = Enum.Font.SourceSansBold
-boatLabel.Text = "Chọn Thuyền Muốn Mua (Tên Thuyền):"
+boatLabel.Text = "SelectedBoat (Tên Thuyền Mua):"
 boatLabel.TextColor3 = Color3.fromRGB(240, 240, 240)
 boatLabel.TextSize = 12
 boatLabel.TextXAlignment = Enum.TextXAlignment.Left
@@ -862,7 +834,130 @@ boatBoxC.Parent = boatTextBox
 boatTextBox.FocusLost:Connect(function(enterPressed)
     if enterPressed then
         if _G.Config then _G.Config.SelectedBoat = boatTextBox.Text end
-        ShowNotification("Đã chọn thuyền: " .. boatTextBox.Text)
+        ShowNotification("Đã cập nhật SelectedBoat: " .. boatTextBox.Text)
+    end
+end)
+
+local tweenSpeedFrame = Instance.new("Frame")
+tweenSpeedFrame.Parent = pageMain
+tweenSpeedFrame.BackgroundColor3 = Color3.fromRGB(28, 28, 28)
+tweenSpeedFrame.Size = UDim2.new(1, -10, 0, 50)
+local tweenCorner = Instance.new("UICorner")
+tweenCorner.CornerRadius = UDim.new(0, 6)
+tweenCorner.Parent = tweenSpeedFrame
+
+local tweenLabel = Instance.new("TextLabel")
+tweenLabel.Parent = tweenSpeedFrame
+tweenLabel.BackgroundTransparency = 1
+tweenLabel.Position = UDim2.new(0, 10, 0, 2)
+tweenLabel.Size = UDim2.new(1, -20, 0, 20)
+tweenLabel.Font = Enum.Font.SourceSansBold
+tweenLabel.Text = "TweenSpeed (Tốc Độ Nhân Vật):"
+tweenLabel.TextColor3 = Color3.fromRGB(240, 240, 240)
+tweenLabel.TextSize = 12
+tweenLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+local tweenTextBox = Instance.new("TextBox")
+tweenTextBox.Parent = tweenSpeedFrame
+tweenTextBox.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+tweenTextBox.Position = UDim2.new(0, 10, 0, 24)
+tweenTextBox.Size = UDim2.new(1, -20, 0, 22)
+tweenTextBox.Font = Enum.Font.SourceSans
+tweenTextBox.Text = tostring((_G.Config and _G.Config.TweenSpeed) or 300)
+tweenTextBox.TextColor3 = Color3.fromRGB(255, 200, 0)
+tweenTextBox.TextSize = 11
+local tweenBoxC = Instance.new("UICorner")
+tweenBoxC.CornerRadius = UDim.new(0, 4)
+tweenBoxC.Parent = tweenTextBox
+
+tweenTextBox.FocusLost:Connect(function(enterPressed)
+    if enterPressed then
+        local num = tonumber(tweenTextBox.Text)
+        if num and _G.Config then
+            _G.Config.TweenSpeed = num
+            ShowNotification("Đã cập nhật TweenSpeed: " .. tostring(num))
+        end
+    end
+end)
+
+local boatTweenFrame = Instance.new("Frame")
+boatTweenFrame.Parent = pageMain
+boatTweenFrame.BackgroundColor3 = Color3.fromRGB(28, 28, 28)
+boatTweenFrame.Size = UDim2.new(1, -10, 0, 50)
+local boatTweenCorner = Instance.new("UICorner")
+boatTweenCorner.CornerRadius = UDim.new(0, 6)
+boatTweenCorner.Parent = boatTweenFrame
+
+local boatTweenLabel = Instance.new("TextLabel")
+boatTweenLabel.Parent = boatTweenFrame
+boatTweenLabel.BackgroundTransparency = 1
+boatTweenLabel.Position = UDim2.new(0, 10, 0, 2)
+boatTweenLabel.Size = UDim2.new(1, -20, 0, 20)
+boatTweenLabel.Font = Enum.Font.SourceSansBold
+boatTweenLabel.Text = "BoatTweenSpeed (Tốc Độ Thuyền):"
+boatTweenLabel.TextColor3 = Color3.fromRGB(240, 240, 240)
+boatTweenLabel.TextSize = 12
+boatTweenLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+local boatTweenTextBox = Instance.new("TextBox")
+boatTweenTextBox.Parent = boatTweenFrame
+boatTweenTextBox.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+boatTweenTextBox.Position = UDim2.new(0, 10, 0, 24)
+boatTweenTextBox.Size = UDim2.new(1, -20, 0, 22)
+boatTweenTextBox.Font = Enum.Font.SourceSans
+boatTweenTextBox.Text = tostring((_G.Config and _G.Config.BoatTweenSpeed) or 350)
+boatTweenTextBox.TextColor3 = Color3.fromRGB(255, 200, 0)
+boatTweenTextBox.TextSize = 11
+local boatTweenBoxC = Instance.new("UICorner")
+boatTweenBoxC.CornerRadius = UDim.new(0, 4)
+boatTweenBoxC.Parent = boatTweenTextBox
+
+boatTweenTextBox.FocusLost:Connect(function(enterPressed)
+    if enterPressed then
+        local num = tonumber(boatTweenTextBox.Text)
+        if num and _G.Config then
+            _G.Config.BoatTweenSpeed = num
+            ShowNotification("Đã cập nhật BoatTweenSpeed: " .. tostring(num))
+        end
+    end
+end)
+
+local autoTravelFrame = Instance.new("Frame")
+autoTravelFrame.Parent = pageMain
+autoTravelFrame.BackgroundColor3 = Color3.fromRGB(28, 28, 28)
+autoTravelFrame.Size = UDim2.new(1, -10, 0, 50)
+local autoTravelCorner = Instance.new("UICorner")
+autoTravelCorner.CornerRadius = UDim.new(0, 6)
+autoTravelCorner.Parent = autoTravelFrame
+
+local autoTravelLabel = Instance.new("TextLabel")
+autoTravelLabel.Parent = autoTravelFrame
+autoTravelLabel.BackgroundTransparency = 1
+autoTravelLabel.Position = UDim2.new(0, 10, 0, 2)
+autoTravelLabel.Size = UDim2.new(1, -20, 0, 20)
+autoTravelLabel.Font = Enum.Font.SourceSansBold
+autoTravelLabel.Text = "AutoTravel (Tên đảo/vị trí muốn đến):"
+autoTravelLabel.TextColor3 = Color3.fromRGB(240, 240, 240)
+autoTravelLabel.TextSize = 12
+autoTravelLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+local autoTravelTextBox = Instance.new("TextBox")
+autoTravelTextBox.Parent = autoTravelFrame
+autoTravelTextBox.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+autoTravelTextBox.Position = UDim2.new(0, 10, 0, 24)
+autoTravelTextBox.Size = UDim2.new(1, -20, 0, 22)
+autoTravelTextBox.Font = Enum.Font.SourceSans
+autoTravelTextBox.Text = (_G.Config and _G.Config.AutoTravel) or ""
+autoTravelTextBox.TextColor3 = Color3.fromRGB(255, 200, 0)
+autoTravelTextBox.TextSize = 11
+local autoTravelBoxC = Instance.new("UICorner")
+autoTravelBoxC.CornerRadius = UDim.new(0, 4)
+autoTravelBoxC.Parent = autoTravelTextBox
+
+autoTravelTextBox.FocusLost:Connect(function(enterPressed)
+    if enterPressed then
+        if _G.Config then _G.Config.AutoTravel = autoTravelTextBox.Text end
+        ShowNotification("Đã kích hoạt AutoTravel tới: " .. autoTravelTextBox.Text)
     end
 end)
 
