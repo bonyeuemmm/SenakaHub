@@ -480,6 +480,9 @@ pcall(function()
     if CoreGui:FindFirstChild("SenakaSleekModernUI") then CoreGui.SenakaSleekModernUI:Destroy() end
     if CoreGui:FindFirstChild("SenakaNeoCyberUI") then CoreGui.SenakaNeoCyberUI:Destroy() end
     if CoreGui:FindFirstChild("SenakaAzureStyleUI") then CoreGui.SenakaAzureStyleUI:Destroy() end
+    if CoreGui:FindFirstChild("SenakaModernAppUI") then CoreGui.SenakaModernAppUI:Destroy() end
+    if CoreGui:FindFirstChild("SenakaGlassPanelUI") then CoreGui.SenakaGlassPanelUI:Destroy() end
+    if CoreGui:FindFirstChild("SenakaCustomIconUI") then CoreGui.SenakaCustomIconUI:Destroy() end
 end)
 
 local targetParent = CoreGui
@@ -492,87 +495,84 @@ pcall(function()
 end)
 
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "SenakaCardUIPanel"
+ScreenGui.Name = "SenakaCustomIconUI"
 ScreenGui.Parent = targetParent
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 ScreenGui.ResetOnSpawn = false
 
--- Nút mở/đóng (Giữ nguyên ID ảnh bạn yêu cầu: 130284374965787)
 local ToggleBtn = Instance.new("ImageButton")
 ToggleBtn.Name = "ToggleBtn"
 ToggleBtn.Parent = ScreenGui
-ToggleBtn.BackgroundColor3 = Color3.fromRGB(25, 28, 38)
-ToggleBtn.Position = UDim2.new(0, 25, 0, 140)
-ToggleBtn.Size = UDim2.new(0, 50, 0, 50)
+ToggleBtn.BackgroundColor3 = Color3.fromRGB(20, 22, 30)
+ToggleBtn.Position = UDim2.new(0, 30, 0, 150)
+ToggleBtn.Size = UDim2.new(0, 52, 0, 52)
 ToggleBtn.Image = (_G.Config and _G.Config.CustomIconId) or "rbxassetid://130284374965787"
 
 local ToggleCorner = Instance.new("UICorner")
-ToggleCorner.CornerRadius = UDim.new(0, 14)
+ToggleCorner.CornerRadius = UDim.new(1, 0)
 ToggleCorner.Parent = ToggleBtn
 
 local ToggleStroke = Instance.new("UIStroke")
-ToggleStroke.Color = Color3.fromRGB(255, 120, 50)
+ToggleStroke.Color = Color3.fromRGB(0, 220, 130)
 ToggleStroke.Thickness = 2
 ToggleStroke.Parent = ToggleBtn
 
--- Khung chính phong cách Thẻ Nổi (Card Panel độc lập, không dùng sidebar)
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
 MainFrame.Parent = ScreenGui
-MainFrame.BackgroundColor3 = Color3.fromRGB(18, 20, 28)
-MainFrame.BackgroundTransparency = 0.02
+MainFrame.BackgroundColor3 = Color3.fromRGB(13, 15, 22)
+MainFrame.BackgroundTransparency = 0.05
 MainFrame.BorderSizePixel = 0
-MainFrame.Position = UDim2.new(0.5, -280, 0.5, -180)
-MainFrame.Size = UDim2.new(0, 560, 0, 360)
+MainFrame.Position = UDim2.new(0.5, -310, 0.5, -190)
+MainFrame.Size = UDim2.new(0, 620, 0, 380)
 
 local MainCorner = Instance.new("UICorner")
-MainCorner.CornerRadius = UDim.new(0, 18)
+MainCorner.CornerRadius = UDim.new(0, 14)
 MainCorner.Parent = MainFrame
 
 local MainStroke = Instance.new("UIStroke")
-MainStroke.Color = Color3.fromRGB(55, 60, 80)
+MainStroke.Color = Color3.fromRGB(40, 50, 70)
 MainStroke.Thickness = 1.5
 MainStroke.Parent = MainFrame
 
--- Tiêu đề dạng Banner đầu bảng
-local HeaderFrame = Instance.new("Frame")
-HeaderFrame.Parent = MainFrame
-HeaderFrame.BackgroundColor3 = Color3.fromRGB(24, 27, 38)
-HeaderFrame.BorderSizePixel = 0
-HeaderFrame.Size = UDim2.new(1, 0, 0, 48)
+local TopBar = Instance.new("Frame")
+TopBar.Parent = MainFrame
+TopBar.BackgroundColor3 = Color3.fromRGB(18, 21, 30)
+TopBar.BorderSizePixel = 0
+TopBar.Size = UDim2.new(1, 0, 0, 42)
 
-local HeaderCorner = Instance.new("UICorner")
-HeaderCorner.CornerRadius = UDim.new(0, 18)
-HeaderCorner.Parent = HeaderFrame
+local TopBarCorner = Instance.new("UICorner")
+TopBarCorner.CornerRadius = UDim.new(0, 14)
+TopBarCorner.Parent = TopBar
 
-local HeaderCover = Instance.new("Frame")
-HeaderCover.Parent = HeaderFrame
-HeaderCover.BackgroundColor3 = Color3.fromRGB(24, 27, 38)
-HeaderCover.BorderSizePixel = 0
-HeaderCover.Position = UDim2.new(0, 0, 1, -8)
-HeaderCover.Size = UDim2.new(1, 0, 0, 8)
+local TopBarCover = Instance.new("Frame")
+TopBarCover.Parent = TopBar
+TopBarCover.BackgroundColor3 = Color3.fromRGB(18, 21, 30)
+TopBarCover.BorderSizePixel = 0
+TopBarCover.Position = UDim2.new(0, 0, 1, -6)
+TopBarCover.Size = UDim2.new(1, 0, 0, 6)
 
-local TitleLabel = Instance.new("TextLabel")
-TitleLabel.Parent = HeaderFrame
-TitleLabel.BackgroundTransparency = 1
-TitleLabel.Position = UDim2.new(0, 18, 0, 0)
-TitleLabel.Size = UDim2.new(0, 350, 1, 0)
-TitleLabel.Font = Enum.Font.GothamBold
-TitleLabel.Text = "SENAKA <font color=\"#FF7832\">PANEL</font> | LEVIATHAN"
-TitleLabel.RichText = true
-TitleLabel.TextColor3 = Color3.fromRGB(245, 245, 250)
-TitleLabel.TextSize = 13
-TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
+local TitleText = Instance.new("TextLabel")
+TitleText.Parent = TopBar
+TitleText.BackgroundTransparency = 1
+TitleText.Position = UDim2.new(0, 16, 0, 0)
+TitleText.Size = UDim2.new(0, 300, 1, 0)
+TitleText.Font = Enum.Font.GothamBold
+TitleText.Text = "SENAKA <font color=\"#00DC82\">HUB SYSTEM</font>"
+TitleText.RichText = true
+TitleText.TextColor3 = Color3.fromRGB(240, 245, 255)
+TitleText.TextSize = 13
+TitleText.TextXAlignment = Enum.TextXAlignment.Left
 
 local CloseBtn = Instance.new("TextButton")
-CloseBtn.Parent = HeaderFrame
-CloseBtn.BackgroundColor3 = Color3.fromRGB(35, 40, 55)
-CloseBtn.Position = UDim2.new(1, -40, 0.5, -12)
-CloseBtn.Size = UDim2.new(0, 24, 0, 24)
+CloseBtn.Parent = TopBar
+CloseBtn.BackgroundColor3 = Color3.fromRGB(28, 33, 46)
+CloseBtn.Position = UDim2.new(1, -36, 0.5, -11)
+CloseBtn.Size = UDim2.new(0, 22, 0, 22)
 CloseBtn.Font = Enum.Font.GothamBold
-CloseBtn.Text = "✕"
-CloseBtn.TextColor3 = Color3.fromRGB(210, 215, 230)
-CloseBtn.TextSize = 11
+CloseBtn.Text = "×"
+CloseBtn.TextColor3 = Color3.fromRGB(220, 225, 240)
+CloseBtn.TextSize = 14
 
 local CloseCorner = Instance.new("UICorner")
 CloseCorner.CornerRadius = UDim.new(0, 6)
@@ -581,25 +581,34 @@ CloseCorner.Parent = CloseBtn
 CloseBtn.MouseButton1Click:Connect(function() MainFrame.Visible = false end)
 ToggleBtn.MouseButton1Click:Connect(function() MainFrame.Visible = not MainFrame.Visible end)
 
--- Nút chuyển Tab dạng Pill (Viên thuốc) ngang ở góc trên bên phải
-local TabBar = Instance.new("Frame")
-TabBar.Parent = HeaderFrame
-TabBar.BackgroundTransparency = 1
-TabBar.Position = UDim2.new(1, -220, 0.5, -14)
-TabBar.Size = UDim2.new(0, 170, 0, 28)
+local Sidebar = Instance.new("ScrollingFrame")
+Sidebar.Parent = MainFrame
+Sidebar.Active = true
+Sidebar.BackgroundColor3 = Color3.fromRGB(15, 18, 26)
+Sidebar.BorderSizePixel = 0
+Sidebar.Position = UDim2.new(0, 0, 0, 42)
+Sidebar.Size = UDim2.new(0, 150, 1, -42)
+Sidebar.CanvasSize = UDim2.new(0, 0, 0, 0)
+Sidebar.AutomaticCanvasSize = Enum.AutomaticSize.Y
+Sidebar.ScrollBarThickness = 0
 
-local TabListLayout = Instance.new("UIListLayout")
-TabListLayout.Parent = TabBar
-TabListLayout.FillDirection = Enum.FillDirection.Horizontal
-TabListLayout.SortOrder = Enum.SortOrder.LayoutOrder
-TabListLayout.Padding = UDim.new(0, 6)
-TabListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right
+local SidebarLayout = Instance.new("UIListLayout")
+SidebarLayout.Parent = Sidebar
+SidebarLayout.SortOrder = Enum.SortOrder.LayoutOrder
+SidebarLayout.Padding = UDim.new(0, 5)
+SidebarLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 
-local ContentContainer = Instance.new("Frame")
-ContentContainer.Parent = MainFrame
-ContentContainer.BackgroundTransparency = 1
-ContentContainer.Position = UDim2.new(0, 16, 0, 58)
-ContentContainer.Size = UDim2.new(1, -32, 1, -70)
+local SidebarPadding = Instance.new("UIPadding")
+SidebarPadding.Parent = Sidebar
+SidebarPadding.PaddingTop = UDim.new(0, 10)
+SidebarPadding.PaddingLeft = UDim.new(0, 8)
+SidebarPadding.PaddingRight = UDim.new(0, 8)
+
+local ContentArea = Instance.new("Frame")
+ContentArea.Parent = MainFrame
+ContentArea.BackgroundTransparency = 1
+ContentArea.Position = UDim2.new(0, 160, 0, 50)
+ContentArea.Size = UDim2.new(1, -170, 1, -60)
 
 local Pages = {}
 local TabButtons = {}
@@ -607,14 +616,14 @@ local TabButtons = {}
 local function CreatePage(name)
     local scroller = Instance.new("ScrollingFrame")
     scroller.Name = name .. "Page"
-    scroller.Parent = ContentContainer
+    scroller.Parent = ContentArea
     scroller.Active = true
     scroller.BackgroundTransparency = 1
     scroller.Size = UDim2.new(1, 0, 1, 0)
     scroller.CanvasSize = UDim2.new(0, 0, 0, 0)
     scroller.AutomaticCanvasSize = Enum.AutomaticSize.Y
     scroller.ScrollBarThickness = 3
-    scroller.ScrollBarImageColor3 = Color3.fromRGB(255, 120, 50)
+    scroller.ScrollBarImageColor3 = Color3.fromRGB(0, 220, 130)
     scroller.Visible = false
 
     local layout = Instance.new("UIListLayout")
@@ -632,74 +641,77 @@ pageMain.Visible = true
 
 local function CreateTabButton(text, targetPage, order)
     local btn = Instance.new("TextButton")
-    btn.Parent = TabBar
-    btn.BackgroundColor3 = Color3.fromRGB(255, 120, 50)
-    btn.BackgroundTransparency = 1
-    btn.Size = UDim2.new(0, 80, 1, 0)
+    btn.Parent = Sidebar
+    btn.BackgroundColor3 = Color3.fromRGB(22, 27, 38)
+    btn.BackgroundTransparency = 0.4
+    btn.Size = UDim2.new(1, 0, 0, 36)
     btn.Font = Enum.Font.GothamMedium
-    btn.Text = text
-    btn.TextColor3 = Color3.fromRGB(160, 165, 185)
-    btn.TextSize = 11
+    btn.Text = "  " .. text
+    btn.TextColor3 = Color3.fromRGB(150, 165, 185)
+    btn.TextSize = 11.5
+    btn.TextXAlignment = Enum.TextXAlignment.Left
     btn.LayoutOrder = order
 
     local btnCorner = Instance.new("UICorner")
-    btnCorner.CornerRadius = UDim.new(0, 6)
+    btnCorner.CornerRadius = UDim.new(0, 8)
     btnCorner.Parent = btn
 
     if targetPage == pageMain then
-        btn.BackgroundTransparency = 0.82
-        btn.TextColor3 = Color3.fromRGB(255, 150, 90)
+        btn.BackgroundColor3 = Color3.fromRGB(0, 220, 130)
+        btn.BackgroundTransparency = 0.8
+        btn.TextColor3 = Color3.fromRGB(0, 245, 150)
     end
 
     btn.MouseButton1Click:Connect(function()
         for _, p in pairs(Pages) do p.Visible = false end
         for _, b in pairs(TabButtons) do
-            b.BackgroundTransparency = 1
-            b.TextColor3 = Color3.fromRGB(160, 165, 185)
+            b.BackgroundColor3 = Color3.fromRGB(22, 27, 38)
+            b.BackgroundTransparency = 0.4
+            b.TextColor3 = Color3.fromRGB(150, 165, 185)
         end
         targetPage.Visible = true
-        btn.BackgroundTransparency = 0.82
-        btn.TextColor3 = Color3.fromRGB(255, 150, 90)
+        btn.BackgroundColor3 = Color3.fromRGB(0, 220, 130)
+        btn.BackgroundTransparency = 0.8
+        btn.TextColor3 = Color3.fromRGB(0, 245, 150)
     end)
 
     table.insert(TabButtons, btn)
 end
 
-CreateTabButton("Main", pageMain, 1)
-CreateTabButton("Teleport", pageTeleport, 2)
+CreateTabButton("Chức Năng", pageMain, 1)
+CreateTabButton("Dịch Chuyển", pageTeleport, 2)
 
--- Các hàm tạo phần tử giao diện dạng Card khối riêng biệt
 local function AddToggleToPage(page, title, defaultVal, callback)
     local frame = Instance.new("Frame")
     frame.Parent = page
-    frame.BackgroundColor3 = Color3.fromRGB(24, 27, 38)
-    frame.Size = UDim2.new(1, -2, 0, 42)
+    frame.BackgroundColor3 = Color3.fromRGB(17, 21, 30)
+    frame.Size = UDim2.new(1, -6, 0, 40)
 
     local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 10)
+    corner.CornerRadius = UDim.new(0, 8)
     corner.Parent = frame
 
     local stroke = Instance.new("UIStroke")
-    stroke.Color = Color3.fromRGB(36, 41, 58)
+    stroke.Color = Color3.fromRGB(38, 46, 62)
     stroke.Thickness = 1
     stroke.Parent = frame
 
     local label = Instance.new("TextLabel")
     label.Parent = frame
     label.BackgroundTransparency = 1
-    label.Position = UDim2.new(0, 14, 0, 0)
-    label.Size = UDim2.new(1, -75, 1, 0)
+    label.Position = UDim2.new(0, 12, 0, 0)
+    label.Size = UDim2.new(1, -65, 1, 0)
     label.Font = Enum.Font.GothamMedium
     label.Text = title
-    label.TextColor3 = Color3.fromRGB(230, 230, 240)
-    label.TextSize = 12
+    label.TextColor3 = Color3.fromRGB(225, 230, 242)
+    label.TextSize = 11.5
     label.TextXAlignment = Enum.TextXAlignment.Left
 
     local switchBg = Instance.new("Frame")
     switchBg.Parent = frame
-    switchBg.BackgroundColor3 = defaultVal and Color3.fromRGB(255, 120, 50) or Color3.fromRGB(42, 48, 68)
-    switchBg.Position = UDim2.new(1, -48, 0.5, -9)
-    switchBg.Size = UDim2.new(0, 38, 0, 18)
+    switchBg.BackgroundColor3 = defaultVal and Color3.fromRGB(0, 220, 130) or Color3.fromRGB(32, 38, 52)
+    switchBg.Position = UDim2.new(1, -44, 0.5, -10)
+    switchBg.Size = UDim2.new(0, 34, 0, 20)
 
     local switchCorner = Instance.new("UICorner")
     switchCorner.CornerRadius = UDim.new(1, 0)
@@ -708,8 +720,8 @@ local function AddToggleToPage(page, title, defaultVal, callback)
     local circle = Instance.new("Frame")
     circle.Parent = switchBg
     circle.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    circle.Position = defaultVal and UDim2.new(1, -15, 0.5, -6) or UDim2.new(0, 3, 0.5, -6)
-    circle.Size = UDim2.new(0, 12, 0, 12)
+    circle.Position = defaultVal and UDim2.new(1, -17, 0.5, -7) or UDim2.new(0, 3, 0.5, -7)
+    circle.Size = UDim2.new(0, 14, 0, 14)
 
     local circleCorner = Instance.new("UICorner")
     circleCorner.CornerRadius = UDim.new(1, 0)
@@ -724,83 +736,83 @@ local function AddToggleToPage(page, title, defaultVal, callback)
     local val = defaultVal
     btn.MouseButton1Click:Connect(function()
         val = not val
-        TweenService:Create(switchBg, TweenInfo.new(0.2), {BackgroundColor3 = val and Color3.fromRGB(255, 120, 50) or Color3.fromRGB(42, 48, 68)}):Play()
-        TweenService:Create(circle, TweenInfo.new(0.2), {Position = val and UDim2.new(1, -15, 0.5, -6) or UDim2.new(0, 3, 0.5, -6)}):Play()
+        TweenService:Create(switchBg, TweenInfo.new(0.2), {BackgroundColor3 = val and Color3.fromRGB(0, 220, 130) or Color3.fromRGB(32, 38, 52)}):Play()
+        TweenService:Create(circle, TweenInfo.new(0.2), {Position = val and UDim2.new(1, -17, 0.5, -7) or UDim2.new(0, 3, 0.5, -7)}):Play()
         pcall(function() callback(val) end)
     end)
-end
-
-local function AddButtonToPage(page, title, callback)
-    local btn = Instance.new("TextButton")
-    btn.Parent = page
-    btn.BackgroundColor3 = Color3.fromRGB(24, 27, 38)
-    btn.Size = UDim2.new(1, -2, 0, 38)
-    btn.Font = Enum.Font.GothamMedium
-    btn.Text = title
-    btn.TextColor3 = Color3.fromRGB(240, 240, 250)
-    btn.TextSize = 12
-
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 10)
-    corner.Parent = btn
-
-    local stroke = Instance.new("UIStroke")
-    stroke.Color = Color3.fromRGB(255, 120, 50)
-    stroke.Transparency = 0.5
-    stroke.Thickness = 1
-    stroke.Parent = btn
-
-    btn.MouseButton1Click:Connect(function() pcall(callback) end)
 end
 
 local function CreateTextBox(page, labelText, defaultText, callbackNum)
     local frame = Instance.new("Frame")
     frame.Parent = page
-    frame.BackgroundColor3 = Color3.fromRGB(24, 27, 38)
-    frame.Size = UDim2.new(1, -2, 0, 52)
+    frame.BackgroundColor3 = Color3.fromRGB(17, 21, 30)
+    frame.Size = UDim2.new(1, -6, 0, 48)
 
     local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 10)
+    corner.CornerRadius = UDim.new(0, 8)
     corner.Parent = frame
 
     local stroke = Instance.new("UIStroke")
-    stroke.Color = Color3.fromRGB(36, 41, 58)
+    stroke.Color = Color3.fromRGB(38, 46, 62)
     stroke.Thickness = 1
     stroke.Parent = frame
 
     local label = Instance.new("TextLabel")
     label.Parent = frame
     label.BackgroundTransparency = 1
-    label.Position = UDim2.new(0, 14, 0, 4)
-    label.Size = UDim2.new(1, -28, 0, 16)
+    label.Position = UDim2.new(0, 12, 0, 3)
+    label.Size = UDim2.new(1, -24, 0, 16)
     label.Font = Enum.Font.GothamMedium
     label.Text = labelText
-    label.TextColor3 = Color3.fromRGB(165, 175, 195)
+    label.TextColor3 = Color3.fromRGB(150, 165, 185)
     label.TextSize = 11
     label.TextXAlignment = Enum.TextXAlignment.Left
 
     local textBox = Instance.new("TextBox")
     textBox.Parent = frame
-    textBox.BackgroundColor3 = Color3.fromRGB(15, 17, 24)
-    textBox.Position = UDim2.new(0, 14, 0, 23)
-    textBox.Size = UDim2.new(1, -28, 0, 22)
+    textBox.BackgroundColor3 = Color3.fromRGB(9, 12, 17)
+    textBox.Position = UDim2.new(0, 12, 0, 22)
+    textBox.Size = UDim2.new(1, -24, 0, 20)
     textBox.Font = Enum.Font.GothamMedium
     textBox.Text = tostring(defaultText)
-    textBox.TextColor3 = Color3.fromRGB(255, 150, 90)
+    textBox.TextColor3 = Color3.fromRGB(0, 220, 130)
     textBox.TextSize = 11
 
     local boxC = Instance.new("UICorner")
-    boxC.CornerRadius = UDim.new(0, 6)
+    boxC.CornerRadius = UDim.new(0, 5)
     boxC.Parent = textBox
     
     local boxStroke = Instance.new("UIStroke")
-    boxStroke.Color = Color3.fromRGB(50, 58, 80)
+    boxStroke.Color = Color3.fromRGB(45, 55, 75)
     boxStroke.Thickness = 1
     boxStroke.Parent = textBox
 
     textBox.FocusLost:Connect(function(enterPressed)
         if enterPressed then callbackNum(textBox.Text) end
     end)
+end
+
+local function AddButtonToPage(page, title, callback)
+    local btn = Instance.new("TextButton")
+    btn.Parent = page
+    btn.BackgroundColor3 = Color3.fromRGB(22, 28, 40)
+    btn.Size = UDim2.new(1, -6, 0, 36)
+    btn.Font = Enum.Font.GothamMedium
+    btn.Text = title
+    btn.TextColor3 = Color3.fromRGB(235, 240, 250)
+    btn.TextSize = 11.5
+
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 8)
+    corner.Parent = btn
+
+    local stroke = Instance.new("UIStroke")
+    stroke.Color = Color3.fromRGB(0, 220, 130)
+    stroke.Transparency = 0.4
+    stroke.Thickness = 1
+    stroke.Parent = btn
+
+    btn.MouseButton1Click:Connect(function() pcall(callback) end)
 end
 
 local cfg = _G.Config or {}
