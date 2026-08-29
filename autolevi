@@ -46,11 +46,8 @@ _G.Config = {
     MasterName = "bonbicuttay_999",
     WaterWalk = true,
     AutoBuso = true,
-    AutoV3 = false,
-    AutoV4 = false,
     AutoAvoidSeaEvent = true,
     SelectedBoat = "Dinghy",
-    AutoGetSanguineArt = false,
     AutoPullHeartToTiki = false,
     AutoPullHeartToHydra = false,
     AutoTravel = "",
@@ -58,11 +55,12 @@ _G.Config = {
     BoatTweenSpeed = 350
 }
 
+_G.BoatList = {"Dinghy", "Sloop", "Caravel", "Galleon", "Swan", "Miracle"}
+
 _G.SenakaLocations = {
     TikiBoat = CFrame.new(-16234, 25, 416),
     Hydra = CFrame.new(5749, 610, -282),
     SpyNpc = CFrame.new(-16110, 20, 450),
-    DemonicFumeNpc = CFrame.new(5263, 2, -10410),
     SeaSearchCenter = CFrame.new(-16000, 20, -15000)
 }
 
@@ -223,22 +221,6 @@ task.spawn(function()
     end
 end)
 
-task.spawn(function() 
-    while task.wait(0.5) do 
-        if _G.Config.AutoV3 then 
-            pcall(function() ReplicatedStorage.Remotes.CommF_:InvokeServer("ActivateAbility") end) 
-        end 
-    end 
-end)
-
-task.spawn(function() 
-    while task.wait(0.8) do 
-        if _G.Config.AutoV4 then 
-            pcall(function() ReplicatedStorage.Remotes.CommF_:InvokeServer("ActivateRaceTransformation") end) 
-        end 
-    end 
-end)
-
 task.spawn(function()
     while task.wait(0.3) do
         if _G.Config.AutoAvoidSeaEvent then
@@ -296,176 +278,145 @@ task.spawn(function()
         local Hum = Char and Char:FindFirstChild("Humanoid")
         local Root = Char and Char:FindFirstChild("HumanoidRootPart")
 
-        if _G.Config.AutoGetSanguineArt and Root and Hum and Hum.Health > 0 then
-            local enemyTarget = nil
-            if workspace:FindFirstChild("Enemies") then
-                for _, mob in pairs(workspace.Enemies:GetChildren()) do
-                    local mobRoot = mob:FindFirstChild("HumanoidRootPart")
-                    local mobHum = mob:FindFirstChild("Humanoid")
-                    if mobRoot and mobHum and mobHum.Health > 0 then
-                        if (mob.Name:find("Vampire") or mob.Name:find("TerrorShark") or mob.Name:find("FishTail") or mob.Name:find("Demonic")) then
-                            if (mobRoot.Position - Root.Position).Magnitude < 2000 then
-                                enemyTarget = mobRoot
+        if _G.Config.IsMaster and Root and Hum and Hum.Health > 0 then
+            local IceIsland = workspace:FindFirstChild("LeviathanIceIsland")
+            local Heart = workspace:FindFirstChild("LeviathanHeart")
+            local distToTiki = (Root.Position - _G.SenakaLocations.TikiBoat.Position).Magnitude
+            
+            if distToTiki > 150 and not GetPlayerBoat() and not IceIsland then
+                _G.SenakaCharacterMove(_G.SenakaLocations.TikiBoat, _G.Config.TweenSpeed)
+                boatFlightState = "Idle"
+            else
+                local myBoat = GetPlayerBoat()
+                if not myBoat then
+                    FindAndInteractBoatDealer()
+                    boatFlightState = "Idle"
+                else
+                    SecureBoatPhysics(myBoat)
+                    
+                    if not Hum.SeatPart then
+                        local targetSeat = nil
+                        for _, d in pairs(myBoat:GetDescendants()) do
+                            if d:IsA("VehicleSeat") and not d.Occupant then
+                                targetSeat = d
                                 break
                             end
                         end
-                    end
-                end
-            end
-
-            if enemyTarget then
-                Root.CFrame = enemyTarget.CFrame * CFrame.new(0, 5, 3)
-                pcall(function()
-                    if VirtualInputManager then
-                        VirtualInputManager:SendMouseButtonEvent(0, 0, 0, true, game, 1)
-                        task.wait(0.05)
-                        VirtualInputManager:SendMouseButtonEvent(0, 0, 0, false, game, 1)
-                    end
-                end)
-            end
-        end
-
-        if not _G.Config.AutoGetSanguineArt then
-            if _G.Config.IsMaster and Root and Hum and Hum.Health > 0 then
-                local IceIsland = workspace:FindFirstChild("LeviathanIceIsland")
-                local Heart = workspace:FindFirstChild("LeviathanHeart")
-                local distToTiki = (Root.Position - _G.SenakaLocations.TikiBoat.Position).Magnitude
-                
-                if distToTiki > 150 and not GetPlayerBoat() and not IceIsland then
-                    _G.SenakaCharacterMove(_G.SenakaLocations.TikiBoat, _G.Config.TweenSpeed)
-                    boatFlightState = "Idle"
-                else
-                    local myBoat = GetPlayerBoat()
-                    if not myBoat then
-                        FindAndInteractBoatDealer()
-                        boatFlightState = "Idle"
-                    else
-                        SecureBoatPhysics(myBoat)
-                        
-                        if not Hum.SeatPart then
-                            local targetSeat = nil
+                        if not targetSeat then
                             for _, d in pairs(myBoat:GetDescendants()) do
-                                if d:IsA("VehicleSeat") and not d.Occupant then
+                                if d:IsA("Seat") and not d.Occupant then
                                     targetSeat = d
                                     break
                                 end
                             end
-                            if not targetSeat then
-                                for _, d in pairs(myBoat:GetDescendants()) do
-                                    if d:IsA("Seat") and not d.Occupant then
-                                        targetSeat = d
-                                        break
+                        end
+
+                        if targetSeat then
+                            Hum.PlatformStand = false
+                            Root.CFrame = targetSeat.CFrame
+                            task.wait(0.3)
+                            pcall(function() targetSeat:Sit(Hum) end)
+                        else
+                            local boatPart = myBoat.PrimaryPart or myBoat:FindFirstChildWhichIsA("BasePart")
+                            if boatPart and (Root.Position - boatPart.Position).Magnitude > 15 then
+                                Root.CFrame = boatPart.CFrame + Vector3.new(0, 5, 0)
+                            end
+                        end
+                    else
+                        if CountPlayersOnBoat(myBoat) >= 5 then
+                            if IceIsland then
+                                local islandPart = IceIsland:FindFirstChild("PrimaryPart") or IceIsland:FindFirstChildWhichIsA("BasePart")
+                                if islandPart then
+                                    if (Root.Position - islandPart.Position).Magnitude > 150 then
+                                        _G.SenakaCharacterMove(islandPart.CFrame * CFrame.new(0, 20, 0), _G.Config.TweenSpeed)
+                                    else
+                                        _G.SenakaCharacterMove(_G.SenakaLocations.SpyNpc, _G.Config.TweenSpeed)
+                                        task.wait(0.5)
+                                        pcall(function() ReplicatedStorage.Remotes.CommF_:InvokeServer("FindLeviathan") end)
                                     end
                                 end
-                            end
-
-                            if targetSeat then
-                                Hum.PlatformStand = false
-                                Root.CFrame = targetSeat.CFrame
-                                task.wait(0.3)
-                                pcall(function() targetSeat:Sit(Hum) end)
+                                if Heart then pcall(function() ReplicatedStorage.Remotes.CommF_:InvokeServer("PullHeart") end) end
                             else
-                                local boatPart = myBoat.PrimaryPart or myBoat:FindFirstChildWhichIsA("BasePart")
-                                if boatPart and (Root.Position - boatPart.Position).Magnitude > 15 then
-                                    Root.CFrame = boatPart.CFrame + Vector3.new(0, 5, 0)
+                                local boatPrimary = myBoat.PrimaryPart or myBoat:FindFirstChildWhichIsA("BasePart")
+                                if boatPrimary then
+                                    local distanceToSea = (boatPrimary.Position - _G.SenakaLocations.SeaSearchCenter.Position).Magnitude
+                                    
+                                    if boatFlightState == "Idle" then
+                                        local highTarget = CFrame.new(boatPrimary.Position.X, 150, boatPrimary.Position.Z)
+                                        local upTween = TweenService:Create(boatPrimary, TweenInfo.new(1.5, Enum.EasingStyle.Linear), {CFrame = highTarget})
+                                        upTween:Play()
+                                        upTween.Completed:Wait()
+                                        boatFlightState = "FlyingToSea"
+                                    elseif boatFlightState == "FlyingToSea" then
+                                        if distanceToSea > 300 then
+                                            local highSeaTarget = CFrame.new(_G.SenakaLocations.SeaSearchCenter.Position.X, 150, _G.SenakaLocations.SeaSearchCenter.Position.Z)
+                                            local duration = (boatPrimary.Position - highSeaTarget.Position).Magnitude / (_G.Config.BoatTweenSpeed or 350)
+                                            local seaTween = TweenService:Create(boatPrimary, TweenInfo.new(duration, Enum.EasingStyle.Linear), {CFrame = highSeaTarget})
+                                            seaTween:Play()
+                                            seaTween.Completed:Wait()
+                                        end
+                                        boatFlightState = "Lowering"
+                                    elseif boatFlightState == "Lowering" then
+                                        local lowSeaTarget = CFrame.new(_G.SenakaLocations.SeaSearchCenter.Position.X, 5, _G.SenakaLocations.SeaSearchCenter.Position.Z)
+                                        local downTween = TweenService:Create(boatPrimary, TweenInfo.new(1, Enum.EasingStyle.Linear), {CFrame = lowSeaTarget})
+                                        downTween:Play()
+                                        downTween.Completed:Wait()
+                                        boatFlightState = "Searching"
+                                    elseif boatFlightState == "Searching" then
+                                        pcall(function() ReplicatedStorage.Remotes.CommF_:InvokeServer("FindLeviathan") end)
+                                    end
                                 end
                             end
                         else
-                            if CountPlayersOnBoat(myBoat) >= 5 then
-                                if IceIsland then
-                                    local islandPart = IceIsland:FindFirstChild("PrimaryPart") or IceIsland:FindFirstChildWhichIsA("BasePart")
-                                    if islandPart then
-                                        if (Root.Position - islandPart.Position).Magnitude > 150 then
-                                            _G.SenakaCharacterMove(islandPart.CFrame * CFrame.new(0, 20, 0), _G.Config.TweenSpeed)
-                                        else
-                                            _G.SenakaCharacterMove(_G.SenakaLocations.SpyNpc, _G.Config.TweenSpeed)
-                                            task.wait(0.5)
-                                            pcall(function() ReplicatedStorage.Remotes.CommF_:InvokeServer("FindLeviathan") end)
-                                        end
-                                    end
-                                    if Heart then pcall(function() ReplicatedStorage.Remotes.CommF_:InvokeServer("PullHeart") end) end
-                                else
-                                    local boatPrimary = myBoat.PrimaryPart or myBoat:FindFirstChildWhichIsA("BasePart")
-                                    if boatPrimary then
-                                        local distanceToSea = (boatPrimary.Position - _G.SenakaLocations.SeaSearchCenter.Position).Magnitude
-                                        
-                                        if boatFlightState == "Idle" then
-                                            local highTarget = CFrame.new(boatPrimary.Position.X, 150, boatPrimary.Position.Z)
-                                            local upTween = TweenService:Create(boatPrimary, TweenInfo.new(1.5, Enum.EasingStyle.Linear), {CFrame = highTarget})
-                                            upTween:Play()
-                                            upTween.Completed:Wait()
-                                            boatFlightState = "FlyingToSea"
-                                        elseif boatFlightState == "FlyingToSea" then
-                                            if distanceToSea > 300 then
-                                                local highSeaTarget = CFrame.new(_G.SenakaLocations.SeaSearchCenter.Position.X, 150, _G.SenakaLocations.SeaSearchCenter.Position.Z)
-                                                local duration = (boatPrimary.Position - highSeaTarget.Position).Magnitude / (_G.Config.BoatTweenSpeed or 350)
-                                                local seaTween = TweenService:Create(boatPrimary, TweenInfo.new(duration, Enum.EasingStyle.Linear), {CFrame = highSeaTarget})
-                                                seaTween:Play()
-                                                seaTween.Completed:Wait()
-                                            end
-                                            boatFlightState = "Lowering"
-                                        elseif boatFlightState == "Lowering" then
-                                            local lowSeaTarget = CFrame.new(_G.SenakaLocations.SeaSearchCenter.Position.X, 5, _G.SenakaLocations.SeaSearchCenter.Position.Z)
-                                            local downTween = TweenService:Create(boatPrimary, TweenInfo.new(1, Enum.EasingStyle.Linear), {CFrame = lowSeaTarget})
-                                            downTween:Play()
-                                            downTween.Completed:Wait()
-                                            boatFlightState = "Searching"
-                                        elseif boatFlightState == "Searching" then
-                                            pcall(function() ReplicatedStorage.Remotes.CommF_:InvokeServer("FindLeviathan") end)
-                                        end
-                                    end
-                                end
-                            else
-                                boatFlightState = "Idle"
-                            end
+                            boatFlightState = "Idle"
                         end
                     end
                 end
             end
+        end
 
-            if _G.Config.IsSlave and Root and Hum and Hum.Health > 0 then
-                local MasterPlayer = nil
-                local foundMaster = false
+        if _G.Config.IsSlave and Root and Hum and Hum.Health > 0 then
+            local MasterPlayer = nil
+            local foundMaster = false
+            for _, p in pairs(Players:GetPlayers()) do
+                if p ~= LocalPlayer and (p.Name:lower() == _G.Config.MasterName:lower() or p.DisplayName:lower() == _G.Config.MasterName:lower()) then
+                    MasterPlayer = p
+                    foundMaster = true
+                    break
+                end
+            end
+            
+            if not foundMaster and _G.Config.MasterName ~= "" then
                 for _, p in pairs(Players:GetPlayers()) do
-                    if p ~= LocalPlayer and (p.Name:lower() == _G.Config.MasterName:lower() or p.DisplayName:lower() == _G.Config.MasterName:lower()) then
+                    if p ~= LocalPlayer then
                         MasterPlayer = p
-                        foundMaster = true
                         break
                     end
                 end
-                
-                if not foundMaster and _G.Config.MasterName ~= "" then
-                    for _, p in pairs(Players:GetPlayers()) do
-                        if p ~= LocalPlayer then
-                            MasterPlayer = p
-                            break
+            end
+
+            if MasterPlayer and MasterPlayer.Character then
+                local MasterRoot = MasterPlayer.Character:FindFirstChild("HumanoidRootPart")
+                if MasterRoot and not Hum.SeatPart then
+                    local TargetSeat = nil
+                    local masterBoat = GetPlayerBoat()
+                    if masterBoat then
+                        for _, d in pairs(masterBoat:GetDescendants()) do
+                            if (d:IsA("Seat") or d:IsA("VehicleSeat")) and not d.Occupant then
+                                TargetSeat = d
+                                break
+                            end
                         end
                     end
-                end
 
-                if MasterPlayer and MasterPlayer.Character then
-                    local MasterRoot = MasterPlayer.Character:FindFirstChild("HumanoidRootPart")
-                    if MasterRoot and not Hum.SeatPart then
-                        local TargetSeat = nil
-                        local masterBoat = GetPlayerBoat()
-                        if masterBoat then
-                            for _, d in pairs(masterBoat:GetDescendants()) do
-                                if (d:IsA("Seat") or d:IsA("VehicleSeat")) and not d.Occupant then
-                                    TargetSeat = d
-                                    break
-                                end
-                            end
-                        end
-
-                        if TargetSeat then
-                            Hum.PlatformStand = false
-                            Root.CFrame = TargetSeat.CFrame
-                            task.wait(0.3)
-                            pcall(function() TargetSeat:Sit(Hum) end)
-                        else
-                            if (Root.Position - MasterRoot.Position).Magnitude > 20 then
-                                Root.CFrame = MasterRoot.CFrame * CFrame.new(0, 0, 5)
-                            end
+                    if TargetSeat then
+                        Hum.PlatformStand = false
+                        Root.CFrame = TargetSeat.CFrame
+                        task.wait(0.3)
+                        pcall(function() TargetSeat:Sit(Hum) end)
+                    else
+                        if (Root.Position - MasterRoot.Position).Magnitude > 20 then
+                            Root.CFrame = MasterRoot.CFrame * CFrame.new(0, 0, 5)
                         end
                     end
                 end
@@ -522,27 +473,92 @@ TitleText.TextColor3 = Color3.fromRGB(200, 200, 200)
 TitleText.TextSize = 12
 TitleText.TextXAlignment = Enum.TextXAlignment.Right
 
+local TabContainer = Instance.new("Frame")
+TabContainer.Parent = MainFrame
+TabContainer.BackgroundTransparency = 1
+TabContainer.Position = UDim2.new(0, 15, 0, 35)
+TabContainer.Size = UDim2.new(1, -30, 0, 30)
+
+local MainTabBtn = Instance.new("TextButton")
+MainTabBtn.Parent = TabContainer
+MainTabBtn.BackgroundColor3 = Color3.fromRGB(60, 130, 245)
+MainTabBtn.Size = UDim2.new(0.5, -5, 1, 0)
+MainTabBtn.Font = Enum.Font.GothamBold
+MainTabBtn.Text = "Main Settings"
+MainTabBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+MainTabBtn.TextSize = 13
+local MCorner = Instance.new("UICorner")
+MCorner.CornerRadius = UDim.new(0, 6)
+MCorner.Parent = MainTabBtn
+
+local TeleportTabBtn = Instance.new("TextButton")
+TeleportTabBtn.Parent = TabContainer
+TeleportTabBtn.Position = UDim2.new(0.5, 5, 0, 0)
+TeleportTabBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 50)
+TeleportTabBtn.Size = UDim2.new(0.5, -5, 1, 0)
+TeleportTabBtn.Font = Enum.Font.GothamBold
+TeleportTabBtn.Text = "Teleport"
+TeleportTabBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
+TeleportTabBtn.TextSize = 13
+local TCorner = Instance.new("UICorner")
+TCorner.CornerRadius = UDim.new(0, 6)
+TCorner.Parent = TeleportTabBtn
+
 local MainScroller = Instance.new("ScrollingFrame")
 MainScroller.Parent = MainFrame
 MainScroller.Active = true
 MainScroller.BackgroundTransparency = 1
-MainScroller.Position = UDim2.new(0, 15, 0, 35)
-MainScroller.Size = UDim2.new(1, -30, 1, -45)
+MainScroller.Position = UDim2.new(0, 15, 0, 75)
+MainScroller.Size = UDim2.new(1, -30, 1, -85)
 MainScroller.CanvasSize = UDim2.new(0, 0, 0, 0)
 MainScroller.AutomaticCanvasSize = Enum.AutomaticSize.Y
 MainScroller.ScrollBarThickness = 3
 MainScroller.ScrollBarImageColor3 = Color3.fromRGB(60, 60, 70)
-
 local MainLayout = Instance.new("UIListLayout")
 MainLayout.Parent = MainScroller
 MainLayout.SortOrder = Enum.SortOrder.LayoutOrder
 MainLayout.Padding = UDim.new(0, 8)
 
+local TeleportScroller = Instance.new("ScrollingFrame")
+TeleportScroller.Parent = MainFrame
+TeleportScroller.Active = true
+TeleportScroller.BackgroundTransparency = 1
+TeleportScroller.Position = UDim2.new(0, 15, 0, 75)
+TeleportScroller.Size = UDim2.new(1, -30, 1, -85)
+TeleportScroller.CanvasSize = UDim2.new(0, 0, 0, 0)
+TeleportScroller.AutomaticCanvasSize = Enum.AutomaticSize.Y
+TeleportScroller.ScrollBarThickness = 3
+TeleportScroller.ScrollBarImageColor3 = Color3.fromRGB(60, 60, 70)
+TeleportScroller.Visible = false
+local TeleportLayout = Instance.new("UIListLayout")
+TeleportLayout.Parent = TeleportScroller
+TeleportLayout.SortOrder = Enum.SortOrder.LayoutOrder
+TeleportLayout.Padding = UDim.new(0, 8)
+
+MainTabBtn.MouseButton1Click:Connect(function()
+    MainScroller.Visible = true
+    TeleportScroller.Visible = false
+    MainTabBtn.BackgroundColor3 = Color3.fromRGB(60, 130, 245)
+    MainTabBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    TeleportTabBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 50)
+    TeleportTabBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
+end)
+
+TeleportTabBtn.MouseButton1Click:Connect(function()
+    MainScroller.Visible = false
+    TeleportScroller.Visible = true
+    TeleportTabBtn.BackgroundColor3 = Color3.fromRGB(60, 130, 245)
+    TeleportTabBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    MainTabBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 50)
+    MainTabBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
+end)
+
 ToggleMenuBtn.MouseButton1Click:Connect(function() MainFrame.Visible = not MainFrame.Visible end)
 
-local function AddSection(text)
+-- UI COMPONENTS
+local function AddSection(parentScroller, text)
     local Label = Instance.new("TextLabel")
-    Label.Parent = MainScroller
+    Label.Parent = parentScroller
     Label.BackgroundTransparency = 1
     Label.Size = UDim2.new(1, 0, 0, 28)
     Label.Font = Enum.Font.GothamBold
@@ -552,9 +568,9 @@ local function AddSection(text)
     Label.TextXAlignment = Enum.TextXAlignment.Left
 end
 
-local function AddToggleCard(title, desc, defaultVal, callback)
+local function AddToggleCard(parentScroller, title, desc, defaultVal, callback)
     local Card = Instance.new("TextButton")
-    Card.Parent = MainScroller
+    Card.Parent = parentScroller
     Card.BackgroundColor3 = Color3.fromRGB(45, 45, 50)
     Card.Size = UDim2.new(1, 0, 0, 60)
     Card.Text = ""
@@ -601,9 +617,9 @@ local function AddToggleCard(title, desc, defaultVal, callback)
     end)
 end
 
-local function AddInputCard(title, desc, defaultText, callback)
+local function AddInputCard(parentScroller, title, desc, defaultText, callback)
     local Card = Instance.new("Frame")
-    Card.Parent = MainScroller
+    Card.Parent = parentScroller
     Card.BackgroundColor3 = Color3.fromRGB(45, 45, 50)
     Card.Size = UDim2.new(1, 0, 0, 60)
     local Corner = Instance.new("UICorner")
@@ -650,9 +666,69 @@ local function AddInputCard(title, desc, defaultText, callback)
     end)
 end
 
-local function AddButtonCard(title, desc, callback)
+local function AddCycleCard(parentScroller, title, desc, options, defaultVal, callback)
     local Card = Instance.new("TextButton")
-    Card.Parent = MainScroller
+    Card.Parent = parentScroller
+    Card.BackgroundColor3 = Color3.fromRGB(45, 45, 50)
+    Card.Size = UDim2.new(1, 0, 0, 60)
+    Card.Text = ""
+    local Corner = Instance.new("UICorner")
+    Corner.CornerRadius = UDim.new(0, 8)
+    Corner.Parent = Card
+    
+    local TxtTitle = Instance.new("TextLabel")
+    TxtTitle.Parent = Card
+    TxtTitle.BackgroundTransparency = 1
+    TxtTitle.Position = UDim2.new(0, 15, 0, 10)
+    TxtTitle.Size = UDim2.new(0.5, 0, 0, 18)
+    TxtTitle.Font = Enum.Font.GothamBold
+    TxtTitle.Text = title
+    TxtTitle.TextColor3 = Color3.fromRGB(230, 230, 230)
+    TxtTitle.TextSize = 13
+    TxtTitle.TextXAlignment = Enum.TextXAlignment.Left
+
+    local TxtDesc = Instance.new("TextLabel")
+    TxtDesc.Parent = Card
+    TxtDesc.BackgroundTransparency = 1
+    TxtDesc.Position = UDim2.new(0, 15, 0, 30)
+    TxtDesc.Size = UDim2.new(0.5, 0, 0, 18)
+    TxtDesc.Font = Enum.Font.Gotham
+    TxtDesc.Text = desc
+    TxtDesc.TextColor3 = Color3.fromRGB(130, 130, 130)
+    TxtDesc.TextSize = 11
+    TxtDesc.TextXAlignment = Enum.TextXAlignment.Left
+    
+    local ValueBox = Instance.new("Frame")
+    ValueBox.Parent = Card
+    ValueBox.BackgroundColor3 = Color3.fromRGB(60, 130, 245)
+    ValueBox.Position = UDim2.new(1, -120, 0.5, -14)
+    ValueBox.Size = UDim2.new(0, 105, 0, 28)
+    local VCorner = Instance.new("UICorner")
+    VCorner.CornerRadius = UDim.new(0, 5)
+    VCorner.Parent = ValueBox
+    
+    local ValueText = Instance.new("TextLabel")
+    ValueText.Parent = ValueBox
+    ValueText.BackgroundTransparency = 1
+    ValueText.Size = UDim2.new(1, 0, 1, 0)
+    ValueText.Font = Enum.Font.GothamBold
+    ValueText.Text = tostring(defaultVal)
+    ValueText.TextColor3 = Color3.fromRGB(255, 255, 255)
+    ValueText.TextSize = 12
+    
+    local currentIndex = table.find(options, defaultVal) or 1
+    
+    Card.MouseButton1Click:Connect(function()
+        currentIndex = currentIndex + 1
+        if currentIndex > #options then currentIndex = 1 end
+        ValueText.Text = options[currentIndex]
+        pcall(function() callback(options[currentIndex]) end)
+    end)
+end
+
+local function AddButtonCard(parentScroller, title, desc, callback)
+    local Card = Instance.new("TextButton")
+    Card.Parent = parentScroller
     Card.BackgroundColor3 = Color3.fromRGB(45, 45, 50)
     Card.Size = UDim2.new(1, 0, 0, 50)
     Card.Text = ""
@@ -687,33 +763,31 @@ end
 
 local cfg = _G.Config
 
-AddSection("Main")
-AddToggleCard("Auto Farm Level", "Automatically farms mobs to level up your character.", cfg.AutoGetSanguineArt, function(v) cfg.AutoGetSanguineArt = v end)
-AddToggleCard("Auto Buso Haki", "Automatically activates Buso Haki.", cfg.AutoBuso, function(v) cfg.AutoBuso = v end)
+AddSection(MainScroller, "Player & Utility")
+AddToggleCard(MainScroller, "Auto Buso Haki", "Automatically activates Buso Haki.", cfg.AutoBuso, function(v) cfg.AutoBuso = v end)
+AddToggleCard(MainScroller, "Water Walk", "Walk on water surface smoothly.", cfg.WaterWalk, function(v) cfg.WaterWalk = v end)
 
-AddSection("Word Quest")
-AddToggleCard("Auto Dressrosa Quest", "Automatically completes the Dressrosa (World 2) quest.", cfg.AutoV3, function(v) cfg.AutoV3 = v end)
-AddToggleCard("Auto Zou Quest", "Automatically completes the Zou (World 3) quest.", cfg.AutoV4, function(v) cfg.AutoV4 = v end)
-
-AddSection("Leviathan & Sea Event")
-AddToggleCard("Role: Master", "Host the boat and drive to Leviathan.", cfg.IsMaster, function(v) cfg.IsMaster = v end)
-AddToggleCard("Role: Slave", "Automatically follows and sits on Master's boat.", cfg.IsSlave, function(v) cfg.IsSlave = v end)
-AddToggleCard("Avoid Sea Event", "Automatically flies up to dodge Sea Event mobs.", cfg.AutoAvoidSeaEvent, function(v) cfg.AutoAvoidSeaEvent = v end)
-AddToggleCard("Water Walk", "Walk on water surface smoothly.", cfg.WaterWalk, function(v) cfg.WaterWalk = v end)
-AddToggleCard("Pull Heart To Tiki", "Takes Leviathan heart back to Tiki Outpost.", cfg.AutoPullHeartToTiki, function(v) 
+AddSection(MainScroller, "Leviathan System")
+AddToggleCard(MainScroller, "Role: Master", "Host the boat and drive to Leviathan.", cfg.IsMaster, function(v) cfg.IsMaster = v end)
+AddToggleCard(MainScroller, "Role: Slave", "Automatically follows and sits on Master's boat.", cfg.IsSlave, function(v) cfg.IsSlave = v end)
+AddToggleCard(MainScroller, "Avoid Sea Event", "Automatically flies up to dodge Sea Event mobs.", cfg.AutoAvoidSeaEvent, function(v) cfg.AutoAvoidSeaEvent = v end)
+AddToggleCard(MainScroller, "Pull Heart To Tiki", "Takes Leviathan heart back to Tiki Outpost.", cfg.AutoPullHeartToTiki, function(v) 
     cfg.AutoPullHeartToTiki = v; if v then cfg.AutoPullHeartToHydra = false end 
 end)
-AddToggleCard("Pull Heart To Hydra", "Takes Leviathan heart back to Hydra Island.", cfg.AutoPullHeartToHydra, function(v) 
+AddToggleCard(MainScroller, "Pull Heart To Hydra", "Takes Leviathan heart back to Hydra Island.", cfg.AutoPullHeartToHydra, function(v) 
     cfg.AutoPullHeartToHydra = v; if v then cfg.AutoPullHeartToTiki = false end 
 end)
 
-AddSection("Settings & Teleport")
-AddInputCard("Master Name", "Enter host player name", cfg.MasterName, function(t) cfg.MasterName = t end)
-AddInputCard("Selected Boat", "Boat to buy automatically", cfg.SelectedBoat, function(t) cfg.SelectedBoat = t end)
-AddInputCard("Player Speed", "Character tween speed", cfg.TweenSpeed, function(t) if tonumber(t) then cfg.TweenSpeed = tonumber(t) end end)
-AddInputCard("Boat Speed", "Boat tween speed", cfg.BoatTweenSpeed, function(t) if tonumber(t) then cfg.BoatTweenSpeed = tonumber(t) end end)
-AddInputCard("Auto Travel", "Type island name to teleport", cfg.AutoTravel, function(t) cfg.AutoTravel = t end)
+AddSection(MainScroller, "Configurations")
+AddInputCard(MainScroller, "Master Name", "Enter host player name", cfg.MasterName, function(t) cfg.MasterName = t end)
+AddCycleCard(MainScroller, "Select Boat", "Click to switch boat type", _G.BoatList, cfg.SelectedBoat, function(t) cfg.SelectedBoat = t end)
+AddInputCard(MainScroller, "Player Speed", "Character tween speed", cfg.TweenSpeed, function(t) if tonumber(t) then cfg.TweenSpeed = tonumber(t) end end)
+AddInputCard(MainScroller, "Boat Speed", "Boat tween speed", cfg.BoatTweenSpeed, function(t) if tonumber(t) then cfg.BoatTweenSpeed = tonumber(t) end end)
 
-AddButtonCard("Teleport to Tiki", "Instant tween to Tiki Outpost.", function() _G.SenakaCharacterMove(_G.SenakaLocations.TikiBoat, _G.Config.TweenSpeed) end)
-AddButtonCard("Teleport to Hydra", "Instant tween to Hydra Island.", function() _G.SenakaCharacterMove(_G.SenakaLocations.Hydra, _G.Config.TweenSpeed) end)
-AddButtonCard("Teleport to Spy NPC", "Instant tween to Spy NPC location.", function() _G.SenakaCharacterMove(_G.SenakaLocations.SpyNpc, _G.Config.TweenSpeed) end)
+AddSection(TeleportScroller, "Auto Travel")
+AddInputCard(TeleportScroller, "Auto Travel", "Type island name to teleport", cfg.AutoTravel, function(t) cfg.AutoTravel = t end)
+
+AddSection(TeleportScroller, "Quick Locations")
+AddButtonCard(TeleportScroller, "Teleport to Tiki", "Instant tween to Tiki Outpost.", function() _G.SenakaCharacterMove(_G.SenakaLocations.TikiBoat, _G.Config.TweenSpeed) end)
+AddButtonCard(TeleportScroller, "Teleport to Hydra", "Instant tween to Hydra Island.", function() _G.SenakaCharacterMove(_G.SenakaLocations.Hydra, _G.Config.TweenSpeed) end)
+AddButtonCard(TeleportScroller, "Teleport to Spy NPC", "Instant tween to Spy NPC location.", function() _G.SenakaCharacterMove(_G.SenakaLocations.SpyNpc, _G.Config.TweenSpeed) end)
