@@ -296,15 +296,30 @@ task.spawn(function()
                     
                     if not Hum.SeatPart then
                         local targetSeat = nil
-                        for _, d in pairs(myBoat:GetDescendants()) do
-                            if d:IsA("VehicleSeat") and not d.Occupant then
-                                targetSeat = d
-                                break
-                            end
-                        end
-                        if not targetSeat then
+                        local isHeartNearby = Heart and (Root.Position - Heart.Position).Magnitude < 1000
+                        
+                       
+                        if isHeartNearby then
                             for _, d in pairs(myBoat:GetDescendants()) do
                                 if d:IsA("Seat") and not d.Occupant then
+                                    targetSeat = d
+                                end
+                            end
+                        end
+                        
+                        if not targetSeat then
+                            for _, d in pairs(myBoat:GetDescendants()) do
+                                if d:IsA("VehicleSeat") and not d.Occupant then
+                                    targetSeat = d
+                                    break
+                                end
+                            end
+                        end
+                        
+                       
+                        if not targetSeat then
+                            for _, d in pairs(myBoat:GetDescendants()) do
+                                if (d:IsA("VehicleSeat") or d:IsA("Seat")) and not d.Occupant then
                                     targetSeat = d
                                     break
                                 end
@@ -401,10 +416,19 @@ task.spawn(function()
                     local TargetSeat = nil
                     local masterBoat = GetPlayerBoat()
                     if masterBoat then
+                         
                         for _, d in pairs(masterBoat:GetDescendants()) do
-                            if (d:IsA("Seat") or d:IsA("VehicleSeat")) and not d.Occupant then
+                            if d:IsA("Seat") and not d.Occupant then
                                 TargetSeat = d
                                 break
+                            end
+                        end
+                        if not TargetSeat then
+                            for _, d in pairs(masterBoat:GetDescendants()) do
+                                if d:IsA("VehicleSeat") and not d.Occupant then
+                                    TargetSeat = d
+                                    break
+                                end
                             end
                         end
                     end
@@ -555,7 +579,6 @@ end)
 
 ToggleMenuBtn.MouseButton1Click:Connect(function() MainFrame.Visible = not MainFrame.Visible end)
 
--- UI COMPONENTS
 local function AddSection(parentScroller, text)
     local Label = Instance.new("TextLabel")
     Label.Parent = parentScroller
