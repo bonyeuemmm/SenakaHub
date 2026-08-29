@@ -40,176 +40,6 @@ task.spawn(function()
         end
     end)
 end)
-_G.Config = {
-    IsMaster = false, 
-    IsSlave = false, 
-    MasterName = "bonbicuttay_999",
-    WaterWalk = true,
-    AutoBuso = true,
-    AutoAvoidSeaEvent = true,
-    SelectedBoat = "Dinghy",
-    AutoPullHeartToTiki = false,
-    AutoPullHeartToHydra = false,
-    AutoTravel = "",
-    TweenSpeed = 300,
-    BoatTweenSpeed = 350
-}
-
-_G.BoatList = {"Dinghy", "Sloop", "Caravel", "Galleon", "Swan", "Miracle"}
-
-_G.SenakaLocations = {
-    TikiBoat = CFrame.new(-16234, 25, 416),
-    Hydra = CFrame.new(5749, 610, -282),
-    SpyNpc = CFrame.new(-16110, 20, 450),
-    SeaSearchCenter = CFrame.new(-16000, 20, -15000)
-}
-
-_G.SenakaCharacterMove = function(targetCFrame, speed)
-    local char = LocalPlayer.Character
-    if not char then return end
-    local root = char:FindFirstChild("HumanoidRootPart")
-    local hum = char:FindFirstChild("Humanoid")
-    if not root or not hum then return end
-
-    speed = speed or _G.Config.TweenSpeed
-    local noclipConn = RunService.Stepped:Connect(function()
-        if char and char.Parent then
-            for _, part in pairs(char:GetChildren()) do
-                if part:IsA("BasePart") then part.CanCollide = false end
-            end
-        end
-    end)
-
-    hum.PlatformStand = true
-    local distance = (root.Position - targetCFrame.Position).Magnitude
-    local duration = distance / speed
-    local tween = TweenService:Create(root, TweenInfo.new(duration, Enum.EasingStyle.Linear), {CFrame = targetCFrame})
-
-    tween:Play()
-    tween.Completed:Wait()
-    if noclipConn then noclipConn:Disconnect() end
-    hum.PlatformStand = false
-end
-
-local function GetPlayerBoat()
-    local boatsFolder = workspace:FindFirstChild("Boats")
-    if boatsFolder then
-        for _, boat in pairs(boatsFolder:GetChildren()) do
-            local owner = boat:FindFirstChild("Owner")
-            if owner then
-                if typeof(owner.Value) == "Instance" and owner.Value == LocalPlayer then return boat end
-                if tostring(owner.Value) == LocalPlayer.Name then return boat end
-            end
-        end
-    end
-    return nil
-end
-
-local lastBuyTime = 0
-local function FindAndInteractBoatDealer()
-    if tick() - lastBuyTime < 10 then return end
-    
-    local dealerPart = nil
-    for _, obj in pairs(workspace:GetDescendants()) do
-        if obj:IsA("Model") then
-            local nameLower = obj.Name:lower()
-            if nameLower:find("boat dealer") or nameLower:find("boatdealer") or nameLower:find("dealer") then
-                if obj:FindFirstChild("HumanoidRootPart") then
-                    dealerPart = obj.HumanoidRootPart
-                    break
-                end
-            end
-        end
-    end
-    
-    if not dealerPart then
-        for _, obj in pairs(workspace:GetChildren()) do
-            if obj:IsA("Model") and obj:FindFirstChild("HumanoidRootPart") and obj:FindFirstChild("Humanoid") then
-                local dist = (obj.HumanoidRootPart.Position - _G.SenakaLocations.TikiBoat.Position).Magnitude
-                if dist < 300 then
-                    dealerPart = obj.HumanoidRootPart
-                    break
-                end
-            end
-        end
-    end
-
-    local char = LocalPlayer.Character
-    local root = char and char:FindFirstChild("HumanoidRootPart")
-    if dealerPart and root then
-        if (dealerPart.Position - root.Position).Magnitude > 10 then
-            _G.SenakaCharacterMove(dealerPart.CFrame * CFrame.new(0, 3, 3), _G.Config.TweenSpeed)
-            task.wait(0.5)
-        end
-    end
-
-    pcall(function() ReplicatedStorage.Remotes.CommF_:InvokeServer("BuyBoat", _G.Config.SelectedBoat or "Dinghy") end)
-    lastBuyTime = tick()
-    task.wait(3)
-end
-
-local processedBoats = {}
-local function SecureBoatPhysics(boatModel)
-    if not boatModel or processedBoats[boatModel] then return end
-    processedBoats[boatModel] = true
-    task.spawn(function()
-        task.wait(0.5)
-        pcall(function()
-            for _, part in pairs(boatModel:GetDescendants()) do
-                if part:IsA("BasePart") then part.CanCollide = true end
-            end
-        end)
-    end)
-end
-
-local function CountPlayersOnBoat(boatModel)
-    if not boatModel then return 0 end
-    local count = 0
-    local countedPlayers = {}
-    for _, desc in pairs(boatModel:GetDescendants()) do
-        if desc:IsA("Seat") or desc:IsA("VehicleSeat") then
-            if desc.Occupant and desc.Occupant.Parent then
-                local player = Players:GetPlayerFromCharacter(desc.Occupant.Parent)
-                if player and not countedPlayers[player] then
-                    countedPlayers[player] = true
-                    count = count + 1
-                end
-            end
-        end
-    end
-    return count
-end
-
-local WaterPlatform = Instance.new("Part")
-WaterPlatform.Name = "SenakaWaterSurfacePlatform"
-WaterPlatform.Size = Vector3.new(100, 1, 100)
-WaterPlatform.Anchored = true
-WaterPlatform.Transparency = 1
-WaterPlatform.CanCollide = false
-WaterPlatform.Parent = workspace
-
-RunService.RenderStepped:Connect(function()
-    if _G.Config.WaterWalk then
-        pcall(function()
-            local char = LocalPlayer.Character
-            local root = char and char:FindFirstChild("HumanoidRootPart")
-            local hum = char and char:FindFirstChild("Humanoid")
-            
-            if root and hum and not hum.SeatPart then
-                if root.Position.Y <= 10 and root.Position.Y >= -30 then
-                    WaterPlatform.CFrame = CFrame.new(root.Position.X, -2.5, root.Position.Z)
-                    WaterPlatform.CanCollide = true
-                else
-                    WaterPlatform.CanCollide = false
-                end
-            else
-                WaterPlatform.CanCollide = false
-            end
-        end)
-    else
-        WaterPlatform.CanCollide = false
-    end
-end)
 task.spawn(function()
     while task.wait(1) do
         if _G.Config.AutoBuso then
@@ -298,25 +128,24 @@ task.spawn(function()
                         local targetSeat = nil
                         local isHeartNearby = Heart and (Root.Position - Heart.Position).Magnitude < 1000
                         
-                       
                         if isHeartNearby then
                             for _, d in pairs(myBoat:GetDescendants()) do
-                                if d:IsA("Seat") and not d.Occupant then
-                                    targetSeat = d
-                                end
-                            end
-                        end
-                        
-                        if not targetSeat then
-                            for _, d in pairs(myBoat:GetDescendants()) do
-                                if d:IsA("VehicleSeat") and not d.Occupant then
+                                if (d:IsA("Seat") or (d:IsA("VehicleSeat") and d.Name ~= "VehicleSeat")) and not d.Occupant then
                                     targetSeat = d
                                     break
                                 end
                             end
                         end
                         
-                       
+                        if not targetSeat then
+                            for _, d in pairs(myBoat:GetDescendants()) do
+                                if d:IsA("VehicleSeat") and d.Name == "VehicleSeat" and not d.Occupant then
+                                    targetSeat = d
+                                    break
+                                end
+                            end
+                        end
+                        
                         if not targetSeat then
                             for _, d in pairs(myBoat:GetDescendants()) do
                                 if (d:IsA("VehicleSeat") or d:IsA("Seat")) and not d.Occupant then
@@ -416,19 +245,238 @@ task.spawn(function()
                     local TargetSeat = nil
                     local masterBoat = GetPlayerBoat()
                     if masterBoat then
-                         
                         for _, d in pairs(masterBoat:GetDescendants()) do
-                            if d:IsA("Seat") and not d.Occupant then
+                            if (d:IsA("Seat") or (d:IsA("VehicleSeat") and d.Name ~= "VehicleSeat")) and not d.Occupant then
                                 TargetSeat = d
                                 break
                             end
                         end
-                        if not TargetSeat then
-                            for _, d in pairs(masterBoat:GetDescendants()) do
-                                if d:IsA("VehicleSeat") and not d.Occupant then
-                                    TargetSeat = d
+                    end
+
+                    if TargetSeat then
+                        Hum.PlatformStand = false
+                        Root.CFrame = TargetSeat.CFrame
+                        task.wait(0.3)
+                        pcall(function() TargetSeat:Sit(Hum) end)
+                    else
+                        if (Root.Position - MasterRoot.Position).Magnitude > 20 then
+                            Root.CFrame = MasterRoot.CFrame * CFrame.new(0, 0, 5)
+                        end
+                    end
+                end
+            end
+        end
+    end
+end)
+task.spawn(function()
+    while task.wait(1) do
+        if _G.Config.AutoBuso then
+            pcall(function()
+                local char = LocalPlayer.Character
+                if char and not char:FindFirstChild("HasBuso") then ReplicatedStorage.Remotes.CommF_:InvokeServer("Buso") end
+            end)
+        end
+    end
+end)
+
+task.spawn(function()
+    while task.wait(0.3) do
+        if _G.Config.AutoAvoidSeaEvent then
+            pcall(function()
+                local char = LocalPlayer.Character
+                local root = char and char:FindFirstChild("HumanoidRootPart")
+                if root then
+                    local seaMonsters = {"SeaBeast", "TerrorShark", "Piranha", "ShipRaid", "SeaMonster"}
+                    for _, obj in pairs(workspace:GetChildren()) do
+                        for _, name in ipairs(seaMonsters) do
+                            if obj.Name:find(name) then
+                                local monsterPart = obj:FindFirstChild("HumanoidRootPart") or obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart")
+                                if monsterPart and (monsterPart.Position - root.Position).Magnitude < 300 then
+                                    root.CFrame = root.CFrame + Vector3.new(0, 150, 0)
+                                end
+                            end
+                        end
+                    end
+                end
+            end)
+        end
+    end
+end)
+
+task.spawn(function()
+    while task.wait(0.5) do
+        local Heart = workspace:FindFirstChild("LeviathanHeart")
+        local Root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+        if Heart and Root then
+            if _G.Config.AutoPullHeartToTiki then
+                Heart:PivotTo(_G.SenakaLocations.TikiBoat + Vector3.new(0, 10, 0))
+                pcall(function() ReplicatedStorage.Remotes.CommF_:InvokeServer("PullHeart") end)
+            elseif _G.Config.AutoPullHeartToHydra then
+                Heart:PivotTo(_G.SenakaLocations.Hydra + Vector3.new(0, 10, 0))
+                pcall(function() ReplicatedStorage.Remotes.CommF_:InvokeServer("PullHeart") end)
+            end
+        end
+    end
+end)
+
+task.spawn(function()
+    while task.wait(0.5) do
+        if _G.Config.AutoTravel ~= "" then
+            pcall(function() ReplicatedStorage.Remotes.CommF_:InvokeServer("Travel", _G.Config.AutoTravel) end)
+            _G.Config.AutoTravel = ""
+        end
+    end
+end)
+
+local boatFlightState = "Idle" 
+
+task.spawn(function()
+    while task.wait(0.5) do
+        local Char = LocalPlayer.Character
+        local Hum = Char and Char:FindFirstChild("Humanoid")
+        local Root = Char and Char:FindFirstChild("HumanoidRootPart")
+
+        if _G.Config.IsMaster and Root and Hum and Hum.Health > 0 then
+            local IceIsland = workspace:FindFirstChild("LeviathanIceIsland")
+            local Heart = workspace:FindFirstChild("LeviathanHeart")
+            local distToTiki = (Root.Position - _G.SenakaLocations.TikiBoat.Position).Magnitude
+            
+            if distToTiki > 150 and not GetPlayerBoat() and not IceIsland then
+                _G.SenakaCharacterMove(_G.SenakaLocations.TikiBoat, _G.Config.TweenSpeed)
+                boatFlightState = "Idle"
+            else
+                local myBoat = GetPlayerBoat()
+                if not myBoat then
+                    FindAndInteractBoatDealer()
+                    boatFlightState = "Idle"
+                else
+                    SecureBoatPhysics(myBoat)
+                    
+                    if not Hum.SeatPart then
+                        local targetSeat = nil
+                        local isHeartNearby = Heart and (Root.Position - Heart.Position).Magnitude < 1000
+                        
+                        if isHeartNearby then
+                            for _, d in pairs(myBoat:GetDescendants()) do
+                                if (d:IsA("Seat") or (d:IsA("VehicleSeat") and d.Name ~= "VehicleSeat")) and not d.Occupant then
+                                    targetSeat = d
                                     break
                                 end
+                            end
+                        end
+                        
+                        if not targetSeat then
+                            for _, d in pairs(myBoat:GetDescendants()) do
+                                if d:IsA("VehicleSeat") and d.Name == "VehicleSeat" and not d.Occupant then
+                                    targetSeat = d
+                                    break
+                                end
+                            end
+                        end
+                        
+                        if not targetSeat then
+                            for _, d in pairs(myBoat:GetDescendants()) do
+                                if (d:IsA("VehicleSeat") or d:IsA("Seat")) and not d.Occupant then
+                                    targetSeat = d
+                                    break
+                                end
+                            end
+                        end
+
+                        if targetSeat then
+                            Hum.PlatformStand = false
+                            Root.CFrame = targetSeat.CFrame
+                            task.wait(0.3)
+                            pcall(function() targetSeat:Sit(Hum) end)
+                        else
+                            local boatPart = myBoat.PrimaryPart or myBoat:FindFirstChildWhichIsA("BasePart")
+                            if boatPart and (Root.Position - boatPart.Position).Magnitude > 15 then
+                                Root.CFrame = boatPart.CFrame + Vector3.new(0, 5, 0)
+                            end
+                        end
+                    else
+                        if CountPlayersOnBoat(myBoat) >= 5 then
+                            if IceIsland then
+                                local islandPart = IceIsland:FindFirstChild("PrimaryPart") or IceIsland:FindFirstChildWhichIsA("BasePart")
+                                if islandPart then
+                                    if (Root.Position - islandPart.Position).Magnitude > 150 then
+                                        _G.SenakaCharacterMove(islandPart.CFrame * CFrame.new(0, 20, 0), _G.Config.TweenSpeed)
+                                    else
+                                        _G.SenakaCharacterMove(_G.SenakaLocations.SpyNpc, _G.Config.TweenSpeed)
+                                        task.wait(0.5)
+                                        pcall(function() ReplicatedStorage.Remotes.CommF_:InvokeServer("FindLeviathan") end)
+                                    end
+                                end
+                                if Heart then pcall(function() ReplicatedStorage.Remotes.CommF_:InvokeServer("PullHeart") end) end
+                            else
+                                local boatPrimary = myBoat.PrimaryPart or myBoat:FindFirstChildWhichIsA("BasePart")
+                                if boatPrimary then
+                                    local distanceToSea = (boatPrimary.Position - _G.SenakaLocations.SeaSearchCenter.Position).Magnitude
+                                    
+                                    if boatFlightState == "Idle" then
+                                        local highTarget = CFrame.new(boatPrimary.Position.X, 150, boatPrimary.Position.Z)
+                                        local upTween = TweenService:Create(boatPrimary, TweenInfo.new(1.5, Enum.EasingStyle.Linear), {CFrame = highTarget})
+                                        upTween:Play()
+                                        upTween.Completed:Wait()
+                                        boatFlightState = "FlyingToSea"
+                                    elseif boatFlightState == "FlyingToSea" then
+                                        if distanceToSea > 300 then
+                                            local highSeaTarget = CFrame.new(_G.SenakaLocations.SeaSearchCenter.Position.X, 150, _G.SenakaLocations.SeaSearchCenter.Position.Z)
+                                            local duration = (boatPrimary.Position - highSeaTarget.Position).Magnitude / (_G.Config.BoatTweenSpeed or 350)
+                                            local seaTween = TweenService:Create(boatPrimary, TweenInfo.new(duration, Enum.EasingStyle.Linear), {CFrame = highSeaTarget})
+                                            seaTween:Play()
+                                            seaTween.Completed:Wait()
+                                        end
+                                        boatFlightState = "Lowering"
+                                    elseif boatFlightState == "Lowering" then
+                                        local lowSeaTarget = CFrame.new(_G.SenakaLocations.SeaSearchCenter.Position.X, 5, _G.SenakaLocations.SeaSearchCenter.Position.Z)
+                                        local downTween = TweenService:Create(boatPrimary, TweenInfo.new(1, Enum.EasingStyle.Linear), {CFrame = lowSeaTarget})
+                                        downTween:Play()
+                                        downTween.Completed:Wait()
+                                        boatFlightState = "Searching"
+                                    elseif boatFlightState == "Searching" then
+                                        pcall(function() ReplicatedStorage.Remotes.CommF_:InvokeServer("FindLeviathan") end)
+                                    end
+                                end
+                            end
+                        else
+                            boatFlightState = "Idle"
+                        end
+                    end
+                end
+            end
+        end
+
+        if _G.Config.IsSlave and Root and Hum and Hum.Health > 0 then
+            local MasterPlayer = nil
+            local foundMaster = false
+            for _, p in pairs(Players:GetPlayers()) do
+                if p ~= LocalPlayer and (p.Name:lower() == _G.Config.MasterName:lower() or p.DisplayName:lower() == _G.Config.MasterName:lower()) then
+                    MasterPlayer = p
+                    foundMaster = true
+                    break
+                end
+            end
+            
+            if not foundMaster and _G.Config.MasterName ~= "" then
+                for _, p in pairs(Players:GetPlayers()) do
+                    if p ~= LocalPlayer then
+                        MasterPlayer = p
+                        break
+                    end
+                end
+            end
+
+            if MasterPlayer and MasterPlayer.Character then
+                local MasterRoot = MasterPlayer.Character:FindFirstChild("HumanoidRootPart")
+                if MasterRoot and not Hum.SeatPart then
+                    local TargetSeat = nil
+                    local masterBoat = GetPlayerBoat()
+                    if masterBoat then
+                        for _, d in pairs(masterBoat:GetDescendants()) do
+                            if (d:IsA("Seat") or (d:IsA("VehicleSeat") and d.Name ~= "VehicleSeat")) and not d.Occupant then
+                                TargetSeat = d
+                                break
                             end
                         end
                     end
