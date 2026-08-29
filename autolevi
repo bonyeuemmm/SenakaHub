@@ -1,128 +1,499 @@
-local Players = game:GetService("Players")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
+pcall(function()
+    local mt = getrawmetatable(game)
+    setreadonly(mt, false)
+    local old = mt.__namecall
+    mt.__namecall = newcclosure(function(self, ...)
+        local method = getnamecallmethod()
+        if method == "Kick" or method == "kick" then
+            return nil
+        end
+        return old(self, ...)
+    end)
+end)
 
-local player = Players.LocalPlayer
-
-local teamEvent = ReplicatedStorage:WaitForChild("ChooseTeam")
-teamEvent:FireServer("Marines")
-
-local boats = {
-    "BasicBoat",
-    "SpeedBoat",
-    "LuxuryBoat",
-    "Beast Hunter"
+_G.Config = _G.Config or {
+    AutoBuso = false,
+    WaterWalk = false,
+    IsMaster = false,
+    IsSlave = false,
+    AutoAvoidSeaEvent = false,
+    AutoPullHeartToTiki = false,
+    AutoPullHeartToHydra = false,
+    MasterName = "",
+    SelectedBoat = "Dinghy",
+    TweenSpeed = 350,
+    BoatTweenSpeed = 250,
+    AutoTravel = ""
 }
 
-local selectedBoat = "Beast Hunter"
-local masterEnabled = false
-local index = 4
+_G.BoatList = {"Dinghy", "Sloop", "Longship", "Caravel"}
 
-local gui = Instance.new("ScreenGui")
-gui.Name = "SENAKA HUB 🍋 KAITUN LEVIATHAN"
-gui.ResetOnSpawn = false
-gui.Parent = player:WaitForChild("PlayerGui")
+_G.SenakaLocations = {
+    TikiBoat = Vector3.new(-16508, 38, 1515),
+    Hydra = Vector3.new(5749, 610, -329),
+    SpyNpc = Vector3.new(-15801, 144, 4398)
+}
 
-local icon = Instance.new("ImageButton")
-icon.Size = UDim2.fromOffset(65, 65)
-icon.Position = UDim2.fromOffset(20, 100)
-icon.BackgroundTransparency = 1
-icon.Image = "rbxassetid://130284374965787"
-icon.Parent = gui
+local Players = game:GetService("Players")
+local CoreGui = game:GetService("CoreGui")
+local TweenService = game:GetService("TweenService")
+local LocalPlayer = Players.LocalPlayer
+local Workspace = game:GetService("Workspace")
 
-local iconCorner = Instance.new("UICorner")
-iconCorner.CornerRadius = UDim.new(1, 0)
-iconCorner.Parent = icon
+_G.SenakaCharacterMove = function(targetPosition, speed)
+    pcall(function()
+        local character = LocalPlayer.Character
+        if not character or not character:FindFirstChild("HumanoidRootPart") then return end
+        local hrp = character.HumanoidRootPart
+        local distance = (hrp.Position - targetPosition).Magnitude
+        local timeTaken = distance / speed
+        
+        local tweenInfo = TweenInfo.new(timeTaken, Enum.EasingStyle.Linear)
+        local tween = TweenService:Create(hrp, tweenInfo, {CFrame = CFrame.new(targetPosition)})
+        tween:Play()
+        
+        _G.CancelMove = function()
+            tween:Cancel()
+        end
+    end)
+end
 
-local frame = Instance.new("Frame")
-frame.Size = UDim2.fromOffset(290, 220)
-frame.Position = UDim2.fromOffset(20, 175)
-frame.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
-frame.Visible = false
-frame.Parent = gui
+_G.SenakaBoatMove = function(targetPosition, speed)
+    pcall(function()
+        local char = LocalPlayer.Character
+        if not char or not char:FindFirstChild("HumanoidRootPart") then return end
+        
+        for _, boat in pairs(Workspace.Boats:GetChildren()) do
+            local owner = boat:FindFirstChild("Owner")
+            if owner and owner.Value == LocalPlayer then
+                local boatPart = boat:FindFirstChild("RootPart") or boat:FindFirstChild("Hull")
+                if boatPart then
+                    local distance = (boatPart.Position - targetPosition).Magnitude
+                    local timeTaken = distance / speed
+                    local tweenInfo = TweenInfo.new(timeTaken, Enum.EasingStyle.Linear)
+                    local tween = TweenService:Create(boatPart, tweenInfo, {CFrame = CFrame.new(targetPosition)})
+                    tween:Play()
+                end
+            end
+        end
+    end)
+end
+task.spawn(function()
+    while task.wait(0.5) do
+        pcall(function()
+            local cfg = _G.Config
+            local char = LocalPlayer.Character
+            if not char then return end
 
-local frameCorner = Instance.new("UICorner")
-frameCorner.CornerRadius = UDim.new(0, 15)
-frameCorner.Parent = frame
+            if cfg.AutoBuso then
+                local humanoid = char:FindFirstChildOfClass("Humanoid")
+                if humanoid and not char:FindFirstChild("Buso") then
+                    local vim = game:GetService("VirtualInputManager")
+                    vim:SendKeyEvent(true, Enum.KeyCode.J, false, game)
+                    vim:SendKeyEvent(false, Enum.KeyCode.J, false, game)
+                end
+            end
 
-local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1, -20, 0, 45)
-title.Position = UDim2.fromOffset(10, 5)
-title.BackgroundTransparency = 1
-title.Text = "🍋 SENAKA HUB"
-title.TextSize = 22
-title.Font = Enum.Font.GothamBold
-title.TextXAlignment = Enum.TextXAlignment.Left
-title.Parent = frame
+            if cfg.WaterWalk then
+                local hrp = char:FindFirstChild("HumanoidRootPart")
+                if hrp and hrp.Position.Y < -5 then
+                    hrp.Velocity = Vector3.new(hrp.Velocity.X, 50, hrp.Velocity.Z)
+                end
+            end
 
-local subtitle = Instance.new("TextLabel")
-subtitle.Size = UDim2.new(1, -20, 0, 25)
-subtitle.Position = UDim2.fromOffset(10, 45)
-subtitle.BackgroundTransparency = 1
-subtitle.Text = "KAITUN LEVIATHAN"
-subtitle.TextSize = 13
-subtitle.Font = Enum.Font.Gotham
-subtitle.TextXAlignment = Enum.TextXAlignment.Left
-subtitle.Parent = frame
+            if cfg.IsMaster then
+                if cfg.AutoPullHeartToTiki then
+                    _G.SenakaBoatMove(_G.SenakaLocations.TikiBoat, cfg.BoatTweenSpeed)
+                elseif cfg.AutoPullHeartToHydra then
+                    _G.SenakaBoatMove(_G.SenakaLocations.Hydra, cfg.BoatTweenSpeed)
+                end
+            elseif cfg.IsSlave and cfg.MasterName ~= "" then
+                local masterPlayer = Players:FindFirstChild(cfg.MasterName)
+                if masterPlayer and masterPlayer.Character and masterPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                    local masterPos = masterPlayer.Character.HumanoidRootPart.Position
+                    local hrp = char:FindFirstChild("HumanoidRootPart")
+                    if hrp and (hrp.Position - masterPos).Magnitude > 20 then
+                        _G.SenakaCharacterMove(masterPos + Vector3.new(0, 5, -5), cfg.TweenSpeed)
+                    end
+                end
+            end
 
-local select = Instance.new("TextButton")
-select.Size = UDim2.new(1, -30, 0, 45)
-select.Position = UDim2.fromOffset(15, 80)
-select.BackgroundColor3 = Color3.fromRGB(40, 40, 48)
-select.Text = "🚤  Thuyền: " .. selectedBoat
-select.TextSize = 15
-select.Font = Enum.Font.GothamSemibold
-select.Parent = frame
-
-local selectCorner = Instance.new("UICorner")
-selectCorner.CornerRadius = UDim.new(0, 10)
-selectCorner.Parent = select
-
-local master = Instance.new("TextButton")
-master.Size = UDim2.new(1, -30, 0, 45)
-master.Position = UDim2.fromOffset(15, 135)
-master.BackgroundColor3 = Color3.fromRGB(40, 40, 48)
-master.Text = "👑  MASTER • OFF"
-master.TextSize = 15
-master.Font = Enum.Font.GothamSemibold
-master.Parent = frame
-
-local masterCorner = Instance.new("UICorner")
-masterCorner.CornerRadius = UDim.new(0, 10)
-masterCorner.Parent = master
-
-local status = Instance.new("TextLabel")
-status.Size = UDim2.new(1, -30, 0, 25)
-status.Position = UDim2.fromOffset(15, 190)
-status.BackgroundTransparency = 1
-status.Text = "⚓ Marines • Ready"
-status.TextSize = 12
-status.Font = Enum.Font.Gotham
-status.TextXAlignment = Enum.TextXAlignment.Left
-status.Parent = frame
-
-icon.MouseButton1Click:Connect(function()
-    frame.Visible = not frame.Visible
-end)
-
-select.MouseButton1Click:Connect(function()
-    index += 1
-
-    if index > #boats then
-        index = 1
-    end
-
-    selectedBoat = boats[index]
-    select.Text = "🚤  Thuyền: " .. selectedBoat
-end)
-
-master.MouseButton1Click:Connect(function()
-    masterEnabled = not masterEnabled
-
-    if masterEnabled then
-        master.Text = "👑  MASTER • ON"
-        status.Text = "⚓ Marines • " .. selectedBoat
-    else
-        master.Text = "👑  MASTER • OFF"
-        status.Text = "⚓ Marines • Ready"
+            if cfg.AutoAvoidSeaEvent then
+                local hrp = char:FindFirstChild("HumanoidRootPart")
+                if hrp then
+                    for _, v in pairs(Workspace.Enemies:GetChildren()) do
+                        if v:FindFirstChild("HumanoidRootPart") and (v.HumanoidRootPart.Position - hrp.Position).Magnitude < 300 then
+                            hrp.CFrame = hrp.CFrame + Vector3.new(0, 150, 0)
+                        end
+                    end
+                end
+            end
+        end)
     end
 end)
+pcall(function()
+    if CoreGui:FindFirstChild("SenakaPremiumUI") then CoreGui.SenakaPremiumUI:Destroy() end
+end)
+
+local targetParent = CoreGui
+pcall(function()
+    if gethui then targetParent = gethui()
+    elseif LocalPlayer and LocalPlayer:FindFirstChild("PlayerGui") then targetParent = LocalPlayer.PlayerGui end
+end)
+
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "SenakaPremiumUI"
+ScreenGui.Parent = targetParent
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+ScreenGui.ResetOnSpawn = false
+
+local ToggleMenuBtn = Instance.new("ImageButton")
+ToggleMenuBtn.Name = "ToggleMenuBtn"
+ToggleMenuBtn.Parent = ScreenGui
+ToggleMenuBtn.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
+ToggleMenuBtn.Position = UDim2.new(0, 15, 0, 150)
+ToggleMenuBtn.Size = UDim2.new(0, 45, 0, 45)
+ToggleMenuBtn.Image = "rbxassetid://130284374965787"
+local ToggleCorner = Instance.new("UICorner")
+ToggleCorner.CornerRadius = UDim.new(0, 10)
+ToggleCorner.Parent = ToggleMenuBtn
+
+local MainFrame = Instance.new("Frame")
+MainFrame.Name = "MainFrame"
+MainFrame.Parent = ScreenGui
+MainFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 40)
+MainFrame.BorderSizePixel = 0
+MainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+MainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
+MainFrame.Size = UDim2.new(0, 520, 0, 300)
+local MainCorner = Instance.new("UICorner")
+MainCorner.CornerRadius = UDim.new(0, 12)
+MainCorner.Parent = MainFrame
+
+local TitleText = Instance.new("TextLabel")
+TitleText.Parent = MainFrame
+TitleText.BackgroundTransparency = 1
+TitleText.Position = UDim2.new(0, 15, 0, 10)
+TitleText.Size = UDim2.new(1, -30, 0, 20)
+TitleText.Font = Enum.Font.GothamMedium
+TitleText.Text = "Senaka Premium [ Blox Fruits ]"
+TitleText.TextColor3 = Color3.fromRGB(200, 200, 200)
+TitleText.TextSize = 12
+TitleText.TextXAlignment = Enum.TextXAlignment.Right
+
+local TabContainer = Instance.new("Frame")
+TabContainer.Parent = MainFrame
+TabContainer.BackgroundTransparency = 1
+TabContainer.Position = UDim2.new(0, 15, 0, 35)
+TabContainer.Size = UDim2.new(1, -30, 0, 30)
+
+local MainTabBtn = Instance.new("TextButton")
+MainTabBtn.Parent = TabContainer
+MainTabBtn.BackgroundColor3 = Color3.fromRGB(60, 130, 245)
+MainTabBtn.Size = UDim2.new(0.5, -5, 1, 0)
+MainTabBtn.Font = Enum.Font.GothamBold
+MainTabBtn.Text = "Main Settings"
+MainTabBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+MainTabBtn.TextSize = 13
+local MCorner = Instance.new("UICorner")
+MCorner.CornerRadius = UDim.new(0, 6)
+MCorner.Parent = MainTabBtn
+
+local TeleportTabBtn = Instance.new("TextButton")
+TeleportTabBtn.Parent = TabContainer
+TeleportTabBtn.Position = UDim2.new(0.5, 5, 0, 0)
+TeleportTabBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 50)
+TeleportTabBtn.Size = UDim2.new(0.5, -5, 1, 0)
+TeleportTabBtn.Font = Enum.Font.GothamBold
+TeleportTabBtn.Text = "Teleport"
+TeleportTabBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
+TeleportTabBtn.TextSize = 13
+local TCorner = Instance.new("UICorner")
+TCorner.CornerRadius = UDim.new(0, 6)
+TCorner.Parent = TeleportTabBtn
+
+local MainScroller = Instance.new("ScrollingFrame")
+MainScroller.Parent = MainFrame
+MainScroller.Active = true
+MainScroller.BackgroundTransparency = 1
+MainScroller.Position = UDim2.new(0, 15, 0, 75)
+MainScroller.Size = UDim2.new(1, -30, 1, -85)
+MainScroller.CanvasSize = UDim2.new(0, 0, 0, 0)
+MainScroller.AutomaticCanvasSize = Enum.AutomaticSize.Y
+MainScroller.ScrollBarThickness = 3
+MainScroller.ScrollBarImageColor3 = Color3.fromRGB(60, 60, 70)
+local MainLayout = Instance.new("UIListLayout")
+MainLayout.Parent = MainScroller
+MainLayout.SortOrder = Enum.SortOrder.LayoutOrder
+MainLayout.Padding = UDim.new(0, 8)
+
+local TeleportScroller = Instance.new("ScrollingFrame")
+TeleportScroller.Parent = MainFrame
+TeleportScroller.Active = true
+TeleportScroller.BackgroundTransparency = 1
+TeleportScroller.Position = UDim2.new(0, 15, 0, 75)
+TeleportScroller.Size = UDim2.new(1, -30, 1, -85)
+TeleportScroller.CanvasSize = UDim2.new(0, 0, 0, 0)
+TeleportScroller.AutomaticCanvasSize = Enum.AutomaticSize.Y
+TeleportScroller.ScrollBarThickness = 3
+TeleportScroller.ScrollBarImageColor3 = Color3.fromRGB(60, 60, 70)
+TeleportScroller.Visible = false
+local TeleportLayout = Instance.new("UIListLayout")
+TeleportLayout.Parent = TeleportScroller
+TeleportLayout.SortOrder = Enum.SortOrder.LayoutOrder
+TeleportLayout.Padding = UDim.new(0, 8)
+
+MainTabBtn.MouseButton1Click:Connect(function()
+    MainScroller.Visible = true
+    TeleportScroller.Visible = false
+    MainTabBtn.BackgroundColor3 = Color3.fromRGB(60, 130, 245)
+    MainTabBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    TeleportTabBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 50)
+    TeleportTabBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
+end)
+
+TeleportTabBtn.MouseButton1Click:Connect(function()
+    MainScroller.Visible = false
+    TeleportScroller.Visible = true
+    TeleportTabBtn.BackgroundColor3 = Color3.fromRGB(60, 130, 245)
+    TeleportTabBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    MainTabBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 50)
+    MainTabBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
+end)
+
+ToggleMenuBtn.MouseButton1Click:Connect(function() MainFrame.Visible = not MainFrame.Visible end)
+local function AddSection(parentScroller, text)
+    local Label = Instance.new("TextLabel")
+    Label.Parent = parentScroller
+    Label.BackgroundTransparency = 1
+    Label.Size = UDim2.new(1, 0, 0, 28)
+    Label.Font = Enum.Font.GothamBold
+    Label.Text = text
+    Label.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Label.TextSize = 17
+    Label.TextXAlignment = Enum.TextXAlignment.Left
+end
+
+local function AddToggleCard(parentScroller, title, desc, defaultVal, callback)
+    local Card = Instance.new("TextButton")
+    Card.Parent = parentScroller
+    Card.BackgroundColor3 = Color3.fromRGB(45, 45, 50)
+    Card.Size = UDim2.new(1, 0, 0, 55)
+    Card.Text = ""
+    local Corner = Instance.new("UICorner")
+    Corner.CornerRadius = UDim.new(0, 8)
+    Corner.Parent = Card
+    
+    local TxtTitle = Instance.new("TextLabel")
+    TxtTitle.Parent = Card
+    TxtTitle.BackgroundTransparency = 1
+    TxtTitle.Position = UDim2.new(0, 15, 0, 8)
+    TxtTitle.Size = UDim2.new(1, -70, 0, 18)
+    TxtTitle.Font = Enum.Font.GothamBold
+    TxtTitle.Text = title
+    TxtTitle.TextColor3 = Color3.fromRGB(230, 230, 230)
+    TxtTitle.TextSize = 13
+    TxtTitle.TextXAlignment = Enum.TextXAlignment.Left
+    
+    local TxtDesc = Instance.new("TextLabel")
+    TxtDesc.Parent = Card
+    TxtDesc.BackgroundTransparency = 1
+    TxtDesc.Position = UDim2.new(0, 15, 0, 28)
+    TxtDesc.Size = UDim2.new(1, -70, 0, 18)
+    TxtDesc.Font = Enum.Font.Gotham
+    TxtDesc.Text = desc
+    TxtDesc.TextColor3 = Color3.fromRGB(130, 130, 130)
+    TxtDesc.TextSize = 11
+    TxtDesc.TextXAlignment = Enum.TextXAlignment.Left
+    
+    local Circle = Instance.new("Frame")
+    Circle.Parent = Card
+    Circle.BackgroundColor3 = defaultVal and Color3.fromRGB(60, 130, 245) or Color3.fromRGB(30, 30, 35)
+    Circle.Position = UDim2.new(1, -38, 0.5, -11)
+    Circle.Size = UDim2.new(0, 22, 0, 22)
+    local CircleCorner = Instance.new("UICorner")
+    CircleCorner.CornerRadius = UDim.new(1, 0)
+    CircleCorner.Parent = Circle
+    
+    local isToggled = defaultVal
+    Card.MouseButton1Click:Connect(function()
+        isToggled = not isToggled
+        TweenService:Create(Circle, TweenInfo.new(0.2), {BackgroundColor3 = isToggled and Color3.fromRGB(60, 130, 245) or Color3.fromRGB(30, 30, 35)}):Play()
+        pcall(function() callback(isToggled) end)
+    end)
+end
+
+local function AddInputCard(parentScroller, title, desc, defaultText, callback)
+    local Card = Instance.new("Frame")
+    Card.Parent = parentScroller
+    Card.BackgroundColor3 = Color3.fromRGB(45, 45, 50)
+    Card.Size = UDim2.new(1, 0, 0, 55)
+    local Corner = Instance.new("UICorner")
+    Corner.CornerRadius = UDim.new(0, 8)
+    Corner.Parent = Card
+    
+    local TxtTitle = Instance.new("TextLabel")
+    TxtTitle.Parent = Card
+    TxtTitle.BackgroundTransparency = 1
+    TxtTitle.Position = UDim2.new(0, 15, 0, 8)
+    TxtTitle.Size = UDim2.new(0.5, 0, 0, 18)
+    TxtTitle.Font = Enum.Font.GothamBold
+    TxtTitle.Text = title
+    TxtTitle.TextColor3 = Color3.fromRGB(230, 230, 230)
+    TxtTitle.TextSize = 13
+    TxtTitle.TextXAlignment = Enum.TextXAlignment.Left
+
+    local TxtDesc = Instance.new("TextLabel")
+    TxtDesc.Parent = Card
+    TxtDesc.BackgroundTransparency = 1
+    TxtDesc.Position = UDim2.new(0, 15, 0, 28)
+    TxtDesc.Size = UDim2.new(0.5, 0, 0, 18)
+    TxtDesc.Font = Enum.Font.Gotham
+    TxtDesc.Text = desc
+    TxtDesc.TextColor3 = Color3.fromRGB(130, 130, 130)
+    TxtDesc.TextSize = 11
+    TxtDesc.TextXAlignment = Enum.TextXAlignment.Left
+    
+    local TextBox = Instance.new("TextBox")
+    TextBox.Parent = Card
+    TextBox.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+    TextBox.Position = UDim2.new(1, -120, 0.5, -14)
+    TextBox.Size = UDim2.new(0, 105, 0, 28)
+    TextBox.Font = Enum.Font.GothamMedium
+    TextBox.Text = tostring(defaultText)
+    TextBox.TextColor3 = Color3.fromRGB(200, 200, 200)
+    TextBox.TextSize = 12
+    local BoxCorner = Instance.new("UICorner")
+    BoxCorner.CornerRadius = UDim.new(0, 5)
+    BoxCorner.Parent = TextBox
+    
+    TextBox.FocusLost:Connect(function(enterPressed)
+        if enterPressed then callback(TextBox.Text) end
+    end)
+end
+
+local function AddCycleCard(parentScroller, title, desc, options, defaultVal, callback)
+    local Card = Instance.new("TextButton")
+    Card.Parent = parentScroller
+    Card.BackgroundColor3 = Color3.fromRGB(45, 45, 50)
+    Card.Size = UDim2.new(1, 0, 0, 55)
+    Card.Text = ""
+    local Corner = Instance.new("UICorner")
+    Corner.CornerRadius = UDim.new(0, 8)
+    Corner.Parent = Card
+    
+    local TxtTitle = Instance.new("TextLabel")
+    TxtTitle.Parent = Card
+    TxtTitle.BackgroundTransparency = 1
+    TxtTitle.Position = UDim2.new(0, 15, 0, 8)
+    TxtTitle.Size = UDim2.new(0.5, 0, 0, 18)
+    TxtTitle.Font = Enum.Font.GothamBold
+    TxtTitle.Text = title
+    TxtTitle.TextColor3 = Color3.fromRGB(230, 230, 230)
+    TxtTitle.TextSize = 13
+    TxtTitle.TextXAlignment = Enum.TextXAlignment.Left
+
+    local TxtDesc = Instance.new("TextLabel")
+    TxtDesc.Parent = Card
+    TxtDesc.BackgroundTransparency = 1
+    TxtDesc.Position = UDim2.new(0, 15, 0, 28)
+    TxtDesc.Size = UDim2.new(0.5, 0, 0, 18)
+    TxtDesc.Font = Enum.Font.Gotham
+    TxtDesc.Text = desc
+    TxtDesc.TextColor3 = Color3.fromRGB(130, 130, 130)
+    TxtDesc.TextSize = 11
+    TxtDesc.TextXAlignment = Enum.TextXAlignment.Left
+    
+    local ValueBox = Instance.new("Frame")
+    ValueBox.Parent = Card
+    ValueBox.BackgroundColor3 = Color3.fromRGB(60, 130, 245)
+    ValueBox.Position = UDim2.new(1, -120, 0.5, -14)
+    ValueBox.Size = UDim2.new(0, 105, 0, 28)
+    local VCorner = Instance.new("UICorner")
+    VCorner.CornerRadius = UDim.new(0, 5)
+    VCorner.Parent = ValueBox
+    
+    local ValueText = Instance.new("TextLabel")
+    ValueText.Parent = ValueBox
+    ValueText.BackgroundTransparency = 1
+    ValueText.Size = UDim2.new(1, 0, 1, 0)
+    ValueText.Font = Enum.Font.GothamBold
+    ValueText.Text = tostring(defaultVal)
+    ValueText.TextColor3 = Color3.fromRGB(255, 255, 255)
+    ValueText.TextSize = 12
+    
+    local currentIndex = table.find(options, defaultVal) or 1
+    
+    Card.MouseButton1Click:Connect(function()
+        currentIndex = currentIndex + 1
+        if currentIndex > #options then currentIndex = 1 end
+        ValueText.Text = options[currentIndex]
+        pcall(function() callback(options[currentIndex]) end)
+    end)
+end
+
+local function AddButtonCard(parentScroller, title, desc, callback)
+    local Card = Instance.new("TextButton")
+    Card.Parent = parentScroller
+    Card.BackgroundColor3 = Color3.fromRGB(45, 45, 50)
+    Card.Size = UDim2.new(1, 0, 0, 48)
+    Card.Text = ""
+    local Corner = Instance.new("UICorner")
+    Corner.CornerRadius = UDim.new(0, 8)
+    Corner.Parent = Card
+    
+    local TxtTitle = Instance.new("TextLabel")
+    TxtTitle.Parent = Card
+    TxtTitle.BackgroundTransparency = 1
+    TxtTitle.Position = UDim2.new(0, 15, 0, 6)
+    TxtTitle.Size = UDim2.new(1, -30, 0, 18)
+    TxtTitle.Font = Enum.Font.GothamBold
+    TxtTitle.Text = title
+    TxtTitle.TextColor3 = Color3.fromRGB(230, 230, 230)
+    TxtTitle.TextSize = 13
+    TxtTitle.TextXAlignment = Enum.TextXAlignment.Left
+
+    local TxtDesc = Instance.new("TextLabel")
+    TxtDesc.Parent = Card
+    TxtDesc.BackgroundTransparency = 1
+    TxtDesc.Position = UDim2.new(0, 15, 0, 24)
+    TxtDesc.Size = UDim2.new(1, -30, 0, 18)
+    TxtDesc.Font = Enum.Font.Gotham
+    TxtDesc.Text = desc
+    TxtDesc.TextColor3 = Color3.fromRGB(130, 130, 130)
+    TxtDesc.TextSize = 11
+    TxtDesc.TextXAlignment = Enum.TextXAlignment.Left
+    
+    Card.MouseButton1Click:Connect(function() pcall(callback) end)
+end
+
+local cfg = _G.Config
+
+AddSection(MainScroller, "Player & Utility")
+AddToggleCard(MainScroller, "Auto Buso Haki", "Automatically activates Buso Haki.", cfg.AutoBuso, function(v) cfg.AutoBuso = v end)
+AddToggleCard(MainScroller, "Water Walk", "Walk on water surface smoothly.", cfg.WaterWalk, function(v) cfg.WaterWalk = v end)
+
+AddSection(MainScroller, "Leviathan System")
+AddToggleCard(MainScroller, "Role: Master", "Host the boat and drive to Leviathan.", cfg.IsMaster, function(v) cfg.IsMaster = v end)
+AddToggleCard(MainScroller, "Role: Slave", "Automatically follows and sits on Master's boat.", cfg.IsSlave, function(v) cfg.IsSlave = v end)
+AddToggleCard(MainScroller, "Avoid Sea Event", "Automatically flies up to dodge Sea Event mobs.", cfg.AutoAvoidSeaEvent, function(v) cfg.AutoAvoidSeaEvent = v end)
+AddToggleCard(MainScroller, "Pull Heart To Tiki", "Takes Leviathan heart back to Tiki Outpost.", cfg.AutoPullHeartToTiki, function(v) 
+    cfg.AutoPullHeartToTiki = v; if v then cfg.AutoPullHeartToHydra = false end 
+end)
+AddToggleCard(MainScroller, "Pull Heart To Hydra", "Takes Leviathan heart back to Hydra Island.", cfg.AutoPullHeartToHydra, function(v) 
+    cfg.AutoPullHeartToHydra = v; if v then cfg.AutoPullHeartToTiki = false end 
+end)
+
+AddSection(MainScroller, "Configurations")
+AddInputCard(MainScroller, "Master Name", "Enter host player name", cfg.MasterName, function(t) cfg.MasterName = t end)
+AddCycleCard(MainScroller, "Select Boat", "Click to switch boat type", _G.BoatList, cfg.SelectedBoat, function(t) cfg.SelectedBoat = t end)
+AddInputCard(MainScroller, "Player Speed", "Character tween speed", cfg.TweenSpeed, function(t) if tonumber(t) then cfg.TweenSpeed = tonumber(t) end end)
+AddInputCard(MainScroller, "Boat Speed", "Boat tween speed", cfg.BoatTweenSpeed, function(t) if tonumber(t) then cfg.BoatTweenSpeed = tonumber(t) end end)
+
+AddSection(TeleportScroller, "Auto Travel")
+AddInputCard(TeleportScroller, "Auto Travel", "Type island name to teleport", cfg.AutoTravel, function(t) cfg.AutoTravel = t end)
+
+AddSection(TeleportScroller, "Quick Locations")
+AddButtonCard(TeleportScroller, "Teleport to Tiki", "Instant tween to Tiki Outpost.", function() _G.SenakaCharacterMove(_G.SenakaLocations.TikiBoat, _G.Config.TweenSpeed) end)
+AddButtonCard(TeleportScroller, "Teleport to Hydra", "Instant tween to Hydra Island.", function() _G.SenakaCharacterMove(_G.SenakaLocations.Hydra, _G.Config.TweenSpeed) end)
+AddButtonCard(TeleportScroller, "Teleport to Spy NPC", "Instant tween to Spy NPC location.", function() _G.SenakaCharacterMove(_G.SenakaLocations.SpyNpc, _G.Config.TweenSpeed) end)
