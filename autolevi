@@ -1,17 +1,19 @@
 local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local player = Players.LocalPlayer
+local event = ReplicatedStorage:WaitForChild("BoatMaster")
 
 local boats = {
     "BasicBoat",
     "SpeedBoat",
-    "LuxuryBoat"
+    "LuxuryBoat",
+    "Beast Hunter"
 }
 
-local selectedBoat = boats[1]
+local selectedBoat = "Beast Hunter"
 local masterEnabled = false
-local menuOpen = false
-local index = 1
+local index = 4
 
 local gui = Instance.new("ScreenGui")
 gui.Name = "SENAKA HUB 🍋 KAITUN LEVIATHAN"
@@ -19,38 +21,78 @@ gui.ResetOnSpawn = false
 gui.Parent = player:WaitForChild("PlayerGui")
 
 local icon = Instance.new("ImageButton")
-icon.Size = UDim2.fromOffset(55, 55)
+icon.Size = UDim2.fromOffset(60, 60)
 icon.Position = UDim2.fromOffset(20, 100)
 icon.BackgroundTransparency = 1
 icon.Image = "rbxassetid://130284374965787"
 icon.Parent = gui
 
 local frame = Instance.new("Frame")
-frame.Size = UDim2.fromOffset(240, 190)
-frame.Position = UDim2.fromOffset(20, 165)
+frame.Size = UDim2.fromOffset(280, 210)
+frame.Position = UDim2.fromOffset(20, 170)
+frame.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
 frame.Visible = false
 frame.Parent = gui
 
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0, 14)
+corner.Parent = frame
+
 local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1, 0, 0, 40)
-title.Text = "SENAKA HUB 🍋 KAITUN LEVIATHAN"
+title.Size = UDim2.new(1, -20, 0, 45)
+title.Position = UDim2.fromOffset(10, 5)
+title.BackgroundTransparency = 1
+title.Text = "🍋 SENAKA HUB"
+title.TextSize = 21
+title.Font = Enum.Font.GothamBold
 title.Parent = frame
 
+local subtitle = Instance.new("TextLabel")
+subtitle.Size = UDim2.new(1, -20, 0, 25)
+subtitle.Position = UDim2.fromOffset(10, 42)
+subtitle.BackgroundTransparency = 1
+subtitle.Text = "KAITUN LEVIATHAN"
+subtitle.TextSize = 13
+subtitle.Font = Enum.Font.Gotham
+subtitle.Parent = frame
+
 local select = Instance.new("TextButton")
-select.Size = UDim2.new(1, -20, 0, 40)
-select.Position = UDim2.fromOffset(10, 50)
-select.Text = "Thuyền: " .. selectedBoat
+select.Size = UDim2.new(1, -30, 0, 45)
+select.Position = UDim2.fromOffset(15, 70)
+select.BackgroundColor3 = Color3.fromRGB(35, 35, 43)
+select.Text = "🚤  Thuyền: " .. selectedBoat
+select.TextSize = 15
+select.Font = Enum.Font.GothamSemibold
 select.Parent = frame
 
+local selectCorner = Instance.new("UICorner")
+selectCorner.CornerRadius = UDim.new(0, 10)
+selectCorner.Parent = select
+
 local master = Instance.new("TextButton")
-master.Size = UDim2.new(1, -20, 0, 40)
-master.Position = UDim2.fromOffset(10, 100)
-master.Text = "Master: OFF"
+master.Size = UDim2.new(1, -30, 0, 45)
+master.Position = UDim2.fromOffset(15, 125)
+master.BackgroundColor3 = Color3.fromRGB(35, 35, 43)
+master.Text = "👑  MASTER • OFF"
+master.TextSize = 15
+master.Font = Enum.Font.GothamSemibold
 master.Parent = frame
 
+local masterCorner = Instance.new("UICorner")
+masterCorner.CornerRadius = UDim.new(0, 10)
+masterCorner.Parent = master
+
+local status = Instance.new("TextLabel")
+status.Size = UDim2.new(1, -30, 0, 25)
+status.Position = UDim2.fromOffset(15, 180)
+status.BackgroundTransparency = 1
+status.Text = "● System Ready"
+status.TextSize = 12
+status.Font = Enum.Font.Gotham
+status.Parent = frame
+
 icon.MouseButton1Click:Connect(function()
-    menuOpen = not menuOpen
-    frame.Visible = menuOpen
+    frame.Visible = not frame.Visible
 end)
 
 select.MouseButton1Click:Connect(function()
@@ -61,17 +103,19 @@ select.MouseButton1Click:Connect(function()
     end
 
     selectedBoat = boats[index]
-    select.Text = "Thuyền: " .. selectedBoat
+    select.Text = "🚤  Thuyền: " .. selectedBoat
 end)
 
 master.MouseButton1Click:Connect(function()
     masterEnabled = not masterEnabled
 
     if masterEnabled then
-        master.Text = "Master: ON"
-        print("Master ON - " .. selectedBoat)
+        master.Text = "👑  MASTER • ON"
+        status.Text = "● Đang xử lý: " .. selectedBoat
+        event:FireServer(selectedBoat, true)
     else
-        master.Text = "Master: OFF"
-        print("Master OFF")
+        master.Text = "👑  MASTER • OFF"
+        status.Text = "● System Ready"
+        event:FireServer(selectedBoat, false)
     end
 end)
